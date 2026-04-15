@@ -4,7 +4,7 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welc');
+    return view('welcome');
 });
 
 Route::get('/dashboard', function () {
@@ -21,4 +21,7 @@ require __DIR__.'/auth.php';
 
 Route::get('/family-tree', function () {
     return view('family-tree');
+});
+Route::get('/family', function () {
+    return view('family');
 });

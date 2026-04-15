@@ -16,34 +16,33 @@
     @vite(['resources/css/app.css', 'resources/js/app.js',])
 </head>
 
-<script src="js/webPet.min.js"></script>
-<script>
-    window.WebPetLang = {
-        hello: "Сайн уу",
-        welcome: "Тавтай морил",
-        touch: "Яагаад дарна 😄",
-    };
-</script>
-
-
-<script>
-    new WebPet({
-        name: "cat",
-        action: { randomMove: true }
-    });
-</script>
-
 <body class="font-sans text-gray-900 antialiased">
-    <div class="min-h-screen grid grid-cols-2 sm:justify-center items-center gap-2 pt-6 sm:pt-0 ">
-        <div>
+
+    <script src="js/webPet.min.js"></script>
+    <script>
+        window.WebPetLang = {
+            hello: "Сайн уу",
+            welcome: "Тавтай морил",
+            touch: "Яагаад дарна 😄",
+        };
+        new WebPet({
+            name: "cat",
+            action: { randomMove: true }
+        });
+    </script>
+
+    <div class="min-h-screen w-full flex flex-col justify-center items-center bg-cover bg-center bg-no-repeat p-4"
+        style="background-image: url('{{ asset('landscape.png') }}');">
+
+        <div class="mb-6">
             <a href="/">
-                <img src="ezgif.com-animated-gif-maker.gif" class="object-cover" alt="Description of animation">
+                <img src="mongoliandeer.png" class="w-32 h-32 md:w-48 md:h-48 object-contain"
+                    alt="Deer Animation">
             </a>
         </div>
 
         <div
-            class="w-full sm:max-w-md mt-6 px-6 py-4  bg-white shadow-md overflow-hidden sm:rounded-lg justify-self-center mx-auto">
-            <div class="text-center text-3xl">Нэвтрэх</div>
+            class="w-full sm:max-w-md px-8 py-10 bg-white/80 backdrop-blur-md shadow-2xl rounded-3xl border border-white/20">
             {{ $slot }}
         </div>
 
