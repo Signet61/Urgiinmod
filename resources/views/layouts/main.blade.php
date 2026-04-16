@@ -86,6 +86,12 @@
                    class="font-bubblegum text-sm px-3 py-1.5 bg-blue-400 hover:bg-blue-500 text-white rounded-full no-underline transition-colors {{ request()->routeIs('dashboard') ? 'ring-2 ring-blue-700' : '' }}">
                     🏠 Самбар
                 </a>
+                <a href="{{ route('profile.edit') }}"
+                   class="flex items-center gap-1.5 px-2 py-1 rounded-full no-underline transition-colors hover:bg-white/50 {{ request()->routeIs('profile.*') ? 'ring-2 ring-purple-400 bg-white/40' : '' }}">
+                    <img src="{{ asset(auth()->user()->avatar ?? 'image/unaach.png') }}"
+                         class="w-7 h-7 rounded-full border-2 border-white shadow object-cover" alt=""/>
+                    <span class="font-bubblegum text-sm text-purple-700 hidden sm:inline">{{ auth()->user()->name }}</span>
+                </a>
                 <form method="POST" action="{{ route('logout') }}" class="inline m-0">
                     @csrf
                     <button type="submit"
