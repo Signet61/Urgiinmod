@@ -86,20 +86,25 @@
 
 {{-- Flash messages --}}
 @if(session('success'))
-    <div class="glass rounded-2xl px-4 py-3 mb-3 text-green-800 font-black text-center border border-green-300">
-        🎉 {{ session('success') }}
+    <div class="glass rounded-2xl px-4 py-3 mb-3 text-green-800 font-black text-center border border-green-300 flex items-center justify-center gap-2">
+        <i data-lucide="party-popper" class="w-5 h-5"></i> {{ session('success') }}
     </div>
 @endif
 
 {{-- Guest save-to-account banner --}}
 @guest
 <div class="glass rounded-2xl px-4 py-3 mb-3 border border-yellow-300 flex items-center gap-3 flex-wrap">
-    <span class="text-sm font-bold text-yellow-800 flex-1">
-        💾 Нэвтэрснээр ургийн модоо дансандаа хадгалах боломжтой!
+    <span class="text-sm font-bold text-yellow-800 flex-1 flex items-center gap-1.5">
+        <i data-lucide="save" class="w-4 h-4"></i>
+        Нэвтэрснээр ургийн модоо дансандаа хадгалах боломжтой!
     </span>
     <div class="flex gap-2">
-        <a href="{{ route('login') }}" class="font-bubblegum text-sm px-4 py-1.5 bg-purple-400 text-white rounded-full no-underline hover:bg-purple-500">🔑 Нэвтрэх</a>
-        <a href="{{ route('register') }}" class="font-bubblegum text-sm px-4 py-1.5 bg-pink-400 text-white rounded-full no-underline hover:bg-pink-500">📝 Бүртгэл</a>
+        <a href="{{ route('login') }}" class="font-bubblegum text-sm px-4 py-1.5 bg-purple-400 text-white rounded-full no-underline hover:bg-purple-500 flex items-center gap-1.5">
+            <i data-lucide="key-round" class="w-3.5 h-3.5"></i> Нэвтрэх
+        </a>
+        <a href="{{ route('register') }}" class="font-bubblegum text-sm px-4 py-1.5 bg-pink-400 text-white rounded-full no-underline hover:bg-pink-500 flex items-center gap-1.5">
+            <i data-lucide="pencil-line" class="w-3.5 h-3.5"></i> Бүртгэл
+        </a>
     </div>
 </div>
 @endguest
@@ -107,9 +112,11 @@
 {{-- ── Header card ── --}}
 <div class="glass rounded-3xl shadow-2xl p-5 mb-4">
     <div class="flex items-end gap-4">
-        <x-deer message="Ургийн модоо харцгаая! 🌳" msgId="deer-msg" size="sm" />
+        <x-deer message="Ургийн модоо харцгаая!" msgId="deer-msg" size="sm" />
         <div class="flex-1">
-            <h1 class="font-bubblegum text-3xl text-green-800">🌳 Ургийн Мод</h1>
+            <h1 class="font-bubblegum text-3xl text-green-800 flex items-center gap-2">
+                <i data-lucide="tree-pine" class="w-7 h-7"></i> Ургийн Мод
+            </h1>
             <p class="text-sm font-bold text-gray-500">Гэр бүлийнхнээ таниарай</p>
         </div>
     </div>
@@ -118,12 +125,12 @@
 {{-- ── Tab nav ── --}}
 <div class="flex gap-2 justify-center my-3 flex-wrap">
     <button id="nb-tree" onclick="goTab('tree')"
-            class="nb-tree act font-bubblegum text-base px-5 py-2.5 border-0 rounded-full cursor-pointer shadow transition-transform hover:-translate-y-0.5">
-        🌳 Ургийн мод
+            class="nb-tree act font-bubblegum text-base px-5 py-2.5 border-0 rounded-full cursor-pointer shadow transition-transform hover:-translate-y-0.5 flex items-center gap-1.5">
+        <i data-lucide="tree-pine" class="w-4 h-4"></i> Ургийн мод
     </button>
     <button id="nb-add" onclick="goTab('add')"
-            class="nb-add font-bubblegum text-base px-5 py-2.5 border-0 rounded-full cursor-pointer shadow transition-transform hover:-translate-y-0.5">
-        ➕ Гишүүн нэмэх
+            class="nb-add font-bubblegum text-base px-5 py-2.5 border-0 rounded-full cursor-pointer shadow transition-transform hover:-translate-y-0.5 flex items-center gap-1.5">
+        <i data-lucide="plus" class="w-4 h-4"></i> Гишүүн нэмэх
     </button>
 </div>
 
@@ -143,16 +150,22 @@
                     @csrf
                     @method('DELETE')
                     <button type="submit"
-                            class="bg-red-300 text-red-900 border-0 rounded-full px-4 py-1.5 font-nunito font-black text-sm cursor-pointer mr-2"
-                            onclick="return confirm('Устгах уу?')">🗑 Устгах</button>
+                            class="bg-red-300 text-red-900 border-0 rounded-full px-4 py-1.5 font-nunito font-black text-sm cursor-pointer mr-2 inline-flex items-center gap-1"
+                            onclick="return confirm('Устгах уу?')">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Устгах
+                    </button>
                 </form>
                 @else
                 <button id="pop-delete-local"
-                        class="bg-red-300 text-red-900 border-0 rounded-full px-4 py-1.5 font-nunito font-black text-sm cursor-pointer mr-2"
-                        onclick="deleteLocal()">🗑 Устгах</button>
+                        class="bg-red-300 text-red-900 border-0 rounded-full px-4 py-1.5 font-nunito font-black text-sm cursor-pointer mr-2 inline-flex items-center gap-1"
+                        onclick="deleteLocal()">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Устгах
+                </button>
                 @endauth
-                <button class="bg-pink-400 text-white border-0 rounded-full px-6 py-2 font-nunito font-black text-base cursor-pointer"
-                        onclick="closePopup()">💛 Хаах</button>
+                <button class="bg-pink-400 text-white border-0 rounded-full px-6 py-2 font-nunito font-black text-base cursor-pointer inline-flex items-center gap-1"
+                        onclick="closePopup()">
+                    <i data-lucide="x" class="w-4 h-4"></i> Хаах
+                </button>
             </div>
         </div>
     </div>
@@ -161,12 +174,14 @@
 {{-- ══ ADD PANEL ══ --}}
 <div class="panel" id="p-add">
     <div class="glass rounded-3xl p-5 shadow-xl">
-        <h2 class="font-bubblegum text-2xl text-green-800 text-center mb-4">✨ Шинэ гишүүн нэмэх</h2>
+        <h2 class="font-bubblegum text-2xl text-green-800 text-center mb-4 flex items-center justify-center gap-2">
+            <i data-lucide="sparkles" class="w-6 h-6"></i> Шинэ гишүүн нэмэх
+        </h2>
 
         {{-- Guest: local-save notice --}}
         @guest
         <div class="flex items-center gap-2 bg-yellow-50 border border-yellow-300 rounded-2xl px-4 py-2.5 mb-3 text-sm font-bold text-yellow-800">
-            <span class="text-lg">💾</span>
+            <i data-lucide="save" class="w-4 h-4 shrink-0"></i>
             <span>Зочин горимд зөвхөн энэ хөтчид хадгалагдана.
                 <a href="{{ route('login') }}" class="text-purple-600 underline">Нэвтэрснээр</a>
                 дансандаа хадгалагдана.
@@ -183,14 +198,18 @@
             @if($errors->any())
                 <div class="bg-red-100 text-red-800 rounded-xl px-4 py-2.5 mb-3 font-black">
                     @foreach($errors->all() as $error)
-                        <div>⚠️ {{ $error }}</div>
+                        <div class="flex items-center gap-1.5">
+                            <i data-lucide="triangle-alert" class="w-3.5 h-3.5 shrink-0"></i> {{ $error }}
+                        </div>
                     @endforeach
                 </div>
             @endif
 
             {{-- Name --}}
             <div class="mb-3">
-                <label class="block font-black text-sm text-gray-600 mb-1">👤 Нэр</label>
+                <label class="flex items-center gap-1.5 font-black text-sm text-gray-600 mb-1">
+                    <i data-lucide="user" class="w-4 h-4"></i> Нэр
+                </label>
                 <input name="name" type="text" placeholder="Жишээ: Баяр өвөө..."
                        value="{{ old('name') }}"
                        class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-2xl text-sm outline-none focus:border-green-400 bg-white transition-colors"/>
@@ -198,7 +217,9 @@
 
             {{-- Relation --}}
             <div class="mb-3">
-                <label class="block font-black text-sm text-gray-600 mb-1">👨‍👩‍👧 Хэн бэ?</label>
+                <label class="flex items-center gap-1.5 font-black text-sm text-gray-600 mb-1">
+                    <i data-lucide="users" class="w-4 h-4"></i> Хэн бэ?
+                </label>
                 <select name="rel"
                         class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-2xl text-sm outline-none focus:border-green-400 bg-white transition-colors">
                     <option value="">-- Сонгоно уу --</option>
@@ -218,14 +239,18 @@
 
             {{-- Bio --}}
             <div class="mb-3">
-                <label class="block font-black text-sm text-gray-600 mb-1">💬 Тэмдэглэл</label>
+                <label class="flex items-center gap-1.5 font-black text-sm text-gray-600 mb-1">
+                    <i data-lucide="message-circle" class="w-4 h-4"></i> Тэмдэглэл
+                </label>
                 <textarea name="bio" placeholder="Жишээ: Бялуу хийдэг, загас барьдаг..."
                           class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-2xl text-sm outline-none focus:border-green-400 bg-white resize-y min-h-[72px] transition-colors">{{ old('bio') }}</textarea>
             </div>
 
             {{-- Avatar picker --}}
             <div class="mb-3">
-                <label class="block font-black text-sm text-gray-600 mb-1">🖼️ Аватар сонгох</label>
+                <label class="flex items-center gap-1.5 font-black text-sm text-gray-600 mb-1">
+                    <i data-lucide="image" class="w-4 h-4"></i> Аватар сонгох
+                </label>
                 <div class="flex flex-wrap gap-2 mt-1" id="emoji-row">
                     @php
                         $avatars = [
@@ -245,17 +270,21 @@
 
             {{-- Photo upload --}}
             <div class="mb-3">
-                <label class="block font-black text-sm text-gray-600 mb-1">📷 Зураг оруулах (заавал биш)</label>
+                <label class="flex items-center gap-1.5 font-black text-sm text-gray-600 mb-1">
+                    <i data-lucide="camera" class="w-4 h-4"></i> Зураг оруулах (заавал биш)
+                </label>
                 <label class="border-2 border-dashed border-green-300 rounded-2xl p-5 text-center cursor-pointer hover:border-green-500 hover:bg-green-50 transition-colors block">
                     <input type="file" name="photo" accept="image/*" onchange="previewImg(this)" class="hidden"/>
                     <div id="upload-inner">
-                        <div class="text-4xl">📸</div>
+                        <div class="flex justify-center mb-1"><i data-lucide="camera" class="w-10 h-10 text-gray-300"></i></div>
                         <div class="text-xs text-gray-400 mt-1">Дарж зураг оруулна уу</div>
                     </div>
                 </label>
             </div>
 
-            <button type="submit" class="add-btn">🌱 Нэмэх!</button>
+            <button type="submit" class="add-btn flex items-center justify-center gap-2">
+                <i data-lucide="sprout" class="w-5 h-5"></i> Нэмэх!
+            </button>
         </form>
     </div>
 </div>
@@ -332,8 +361,8 @@
         const msg = document.getElementById('deer-msg');
         if (msg) {
             msg.textContent = t === 'add'
-                ? 'Шинэ гишүүн нэмцгээе! ➕'
-                : 'Ургийн модоо харцгаая! 🌳';
+                ? 'Шинэ гишүүн нэмцгээе!'
+                : 'Ургийн модоо харцгаая!';
         }
         if (t === 'tree') renderTree();
     }
@@ -342,13 +371,17 @@
     function renderTree() {
         const tc = document.getElementById('tree-content');
         if (!members || !members.length) {
-            tc.innerHTML = '<div class="empty-tree"><div class="big">🌱</div><p>Гишүүн байхгүй байна.<br>"Гишүүн нэмэх" дарж нэмнэ үү!</p></div>';
+            tc.innerHTML = `<div class="empty-tree">
+                <div class="big flex justify-center"><i data-lucide="sprout" style="width:56px;height:56px;color:#66bb6a"></i></div>
+                <p>Гишүүн байхгүй байна.<br>"Гишүүн нэмэх" дарж нэмнэ үү!</p>
+            </div>`;
+            window.createLucideIcons();
             return;
         }
         const gens = [
-            { lbl:'👴👵 Өвөө эмээ нар', keys:['gpl','gml','gpr','gmr'] },
-            { lbl:'👨👩 Эцэг эхчүүд',   keys:['dad','mom','uncle','aunt'] },
-            { lbl:'👦👧 Бид нар',        keys:['me','sib','cousin'] },
+            { lbl:'Өвөө эмээ нар', keys:['gpl','gml','gpr','gmr'] },
+            { lbl:'Эцэг эхчүүд',   keys:['dad','mom','uncle','aunt'] },
+            { lbl:'Бид нар',        keys:['me','sib','cousin'] },
         ];
         let h = '';
         let prevHad = false;
@@ -395,7 +428,7 @@
         const m = members.find(x => x.id === id); if (!m) return;
         const r = RELS[m.rel] || {};
         document.getElementById('pop-name').textContent = m.name;
-        document.getElementById('pop-rel').textContent  = (r.lbl||m.rel) + (m.rel==='me'?' ⭐':'');
+        document.getElementById('pop-rel').textContent  = (r.lbl||m.rel);
         document.getElementById('pop-bio').textContent  = m.bio || '';
         document.getElementById('pop-av-area').innerHTML = m.photo
             ? `<img class="pop-img" src="${m.photo}" alt="${m.name}"/>`
@@ -405,6 +438,7 @@
         const delForm = document.getElementById('pop-delete-form');
         if (delForm) delForm.action = `/family-tree/${id}`;
         document.getElementById('popup-overlay').classList.add('show');
+        window.createLucideIcons();
     }
     function closePopup(e) {
         if (!e || e.target === document.getElementById('popup-overlay'))
@@ -424,25 +458,30 @@
     function previewImg(inp) {
         const f = inp.files[0]; if (!f) return;
         if (!IS_AUTH) {
-            // Read as base64 for localStorage storage
             const reader = new FileReader();
             reader.onload = ev => {
                 photoData = ev.target.result;
                 document.getElementById('upload-inner').innerHTML =
                     `<img class="prev-img" src="${photoData}"/>
-                     <div class="text-xs text-green-600 mt-1 font-black text-center">✓ Бэлэн!</div>`;
+                     <div class="text-xs text-green-600 mt-1 font-black text-center flex items-center justify-center gap-1">
+                         <i data-lucide="check" style="width:12px;height:12px"></i> Бэлэн!
+                     </div>`;
+                window.createLucideIcons();
             };
             reader.readAsDataURL(f);
         } else {
             document.getElementById('upload-inner').innerHTML =
                 `<img class="prev-img" src="${URL.createObjectURL(f)}"/>
-                 <div class="text-xs text-green-600 mt-1 font-black text-center">✓ Бэлэн!</div>`;
+                 <div class="text-xs text-green-600 mt-1 font-black text-center flex items-center justify-center gap-1">
+                     <i data-lucide="check" style="width:12px;height:12px"></i> Бэлэн!
+                 </div>`;
+            window.createLucideIcons();
         }
     }
 
     // ── Guest: save to localStorage and re-render ──
     function handleAddSubmit(e) {
-        if (IS_AUTH) return true; // Let the form POST to server normally
+        if (IS_AUTH) return true;
 
         e.preventDefault();
         const name = document.querySelector('[name="name"]').value.trim();
@@ -451,9 +490,14 @@
         const btn  = document.querySelector('.add-btn');
 
         if (!name || !rel) {
-            btn.textContent = '⚠️ Нэр болон харилцааг оруулна уу!';
+            btn.innerHTML = '<i data-lucide="triangle-alert" style="width:18px;height:18px;display:inline-block;vertical-align:middle;margin-right:4px"></i>Нэр болон харилцааг оруулна уу!';
             btn.style.background = '#ef5350';
-            setTimeout(() => { btn.textContent = '🌱 Нэмэх!'; btn.style.background = ''; }, 1800);
+            window.createLucideIcons();
+            setTimeout(() => {
+                btn.innerHTML = '<i data-lucide="sprout" style="width:18px;height:18px;display:inline-block;vertical-align:middle;margin-right:4px"></i>Нэмэх!';
+                btn.style.background = '';
+                window.createLucideIcons();
+            }, 1800);
             return false;
         }
 
@@ -471,10 +515,17 @@
         document.querySelectorAll('.emo-btn').forEach((b, i) => b.classList.toggle('sel', i === 0));
         document.getElementById('fi-emoji').value = selEmoji;
         document.getElementById('upload-inner').innerHTML =
-            `<div class="text-4xl">📸</div><div class="text-xs text-gray-400 mt-1">Дарж зураг оруулна уу</div>`;
+            `<div class="flex justify-center mb-1"><i data-lucide="camera" style="width:40px;height:40px;color:#d1d5db"></i></div>
+             <div class="text-xs text-gray-400 mt-1">Дарж зураг оруулна уу</div>`;
 
-        btn.textContent = '🎉 Нэмэгдлээ!'; btn.style.background = '#ff9800';
-        setTimeout(() => { btn.textContent = '🌱 Нэмэх!'; btn.style.background = ''; }, 1400);
+        btn.innerHTML = '<i data-lucide="party-popper" style="width:18px;height:18px;display:inline-block;vertical-align:middle;margin-right:4px"></i>Нэмэгдлээ!';
+        btn.style.background = '#ff9800';
+        window.createLucideIcons();
+        setTimeout(() => {
+            btn.innerHTML = '<i data-lucide="sprout" style="width:18px;height:18px;display:inline-block;vertical-align:middle;margin-right:4px"></i>Нэмэх!';
+            btn.style.background = '';
+            window.createLucideIcons();
+        }, 1400);
         setTimeout(() => goTab('tree'), 600);
         return false;
     }

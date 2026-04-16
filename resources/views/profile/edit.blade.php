@@ -22,7 +22,9 @@
         <img id="profile-preview" src="{{ asset($current) }}"
              class="w-20 h-20 rounded-full border-4 border-white shadow-lg object-cover"
              alt="{{ $user->name }}"/>
-        <div class="absolute -bottom-1 -right-1 bg-green-400 rounded-full w-6 h-6 flex items-center justify-center text-white text-xs shadow">✎</div>
+        <div class="absolute -bottom-1 -right-1 bg-green-400 rounded-full w-6 h-6 flex items-center justify-center text-white shadow">
+            <i data-lucide="pencil" class="w-3 h-3"></i>
+        </div>
     </div>
     <div>
         <h1 class="font-bubblegum text-2xl text-green-800">{{ $user->name }}</h1>
@@ -32,7 +34,9 @@
 
 {{-- ── Avatar picker ── --}}
 <div class="glass rounded-3xl shadow-xl p-5 mb-4">
-    <h2 class="font-bubblegum text-lg text-green-800 mb-3">🎨 Аватар сонгох</h2>
+    <h2 class="font-bubblegum text-lg text-green-800 mb-3 flex items-center gap-2">
+        <i data-lucide="palette" class="w-5 h-5"></i> Аватар сонгох
+    </h2>
     <div class="grid grid-cols-6 gap-2 sm:grid-cols-8">
         @foreach($avatars as $av)
         <button type="button" onclick="pickAvatar('{{ $av }}')"
@@ -47,7 +51,9 @@
 
 {{-- ── Profile info form ── --}}
 <div class="glass rounded-3xl shadow-xl p-5 mb-4">
-    <h2 class="font-bubblegum text-lg text-green-800 mb-4">👤 Мэдээлэл засах</h2>
+    <h2 class="font-bubblegum text-lg text-green-800 mb-4 flex items-center gap-2">
+        <i data-lucide="user" class="w-5 h-5"></i> Мэдээлэл засах
+    </h2>
 
     <form id="send-verification" method="post" action="{{ route('verification.send') }}">@csrf</form>
 
@@ -72,11 +78,13 @@
 
         <div class="flex items-center gap-3 pt-1">
             <button type="submit"
-                    class="font-bubblegum px-6 py-2 bg-green-400 hover:bg-green-500 text-white rounded-full transition-colors shadow">
-                💾 Хадгалах
+                    class="font-bubblegum px-6 py-2 bg-green-400 hover:bg-green-500 text-white rounded-full transition-colors shadow flex items-center gap-1.5">
+                <i data-lucide="save" class="w-4 h-4"></i> Хадгалах
             </button>
             @if(session('status') === 'profile-updated')
-                <span class="font-bubblegum text-green-600 text-sm">✓ Хадгалагдлаа!</span>
+                <span class="font-bubblegum text-green-600 text-sm flex items-center gap-1">
+                    <i data-lucide="check" class="w-4 h-4"></i> Хадгалагдлаа!
+                </span>
             @endif
         </div>
     </form>
@@ -84,7 +92,9 @@
 
 {{-- ── Password form ── --}}
 <div class="glass rounded-3xl shadow-xl p-5 mb-4">
-    <h2 class="font-bubblegum text-lg text-green-800 mb-4">🔒 Нууц үг солих</h2>
+    <h2 class="font-bubblegum text-lg text-green-800 mb-4 flex items-center gap-2">
+        <i data-lucide="lock" class="w-5 h-5"></i> Нууц үг солих
+    </h2>
     <form method="post" action="{{ route('password.update') }}" class="space-y-4">
         @csrf
         @method('put')
@@ -115,11 +125,13 @@
 
         <div class="flex items-center gap-3 pt-1">
             <button type="submit"
-                    class="font-bubblegum px-6 py-2 bg-blue-400 hover:bg-blue-500 text-white rounded-full transition-colors shadow">
-                🔑 Солих
+                    class="font-bubblegum px-6 py-2 bg-blue-400 hover:bg-blue-500 text-white rounded-full transition-colors shadow flex items-center gap-1.5">
+                <i data-lucide="key-round" class="w-4 h-4"></i> Солих
             </button>
             @if(session('status') === 'password-updated')
-                <span class="font-bubblegum text-blue-600 text-sm">✓ Солигдлоо!</span>
+                <span class="font-bubblegum text-blue-600 text-sm flex items-center gap-1">
+                    <i data-lucide="check" class="w-4 h-4"></i> Солигдлоо!
+                </span>
             @endif
         </div>
     </form>
@@ -127,12 +139,14 @@
 
 {{-- ── Delete account ── --}}
 <div class="glass rounded-3xl shadow-xl p-5 mb-4">
-    <h2 class="font-bubblegum text-lg text-red-600 mb-2">⚠️ Бүртгэл устгах</h2>
+    <h2 class="font-bubblegum text-lg text-red-600 mb-2 flex items-center gap-2">
+        <i data-lucide="triangle-alert" class="w-5 h-5"></i> Бүртгэл устгах
+    </h2>
     <p class="text-xs font-bold text-gray-500 mb-4">Бүртгэлээ устгавал бүх өгөгдөл устна. Буцааж сэргээх боломжгүй.</p>
 
     <button onclick="document.getElementById('delete-modal').style.display='flex'"
-            class="font-bubblegum px-5 py-2 bg-red-400 hover:bg-red-500 text-white rounded-full transition-colors shadow text-sm">
-        🗑 Устгах
+            class="font-bubblegum px-5 py-2 bg-red-400 hover:bg-red-500 text-white rounded-full transition-colors shadow text-sm flex items-center gap-1.5">
+        <i data-lucide="trash-2" class="w-4 h-4"></i> Устгах
     </button>
 </div>
 

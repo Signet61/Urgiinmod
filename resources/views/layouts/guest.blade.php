@@ -23,7 +23,7 @@
         window.WebPetLang = {
             hello: "Сайн уу",
             welcome: "Тавтай морил",
-            touch: "Яагаад дарна 😄",
+            touch: "Яагаад дарна?",
         };
         new WebPet({
             name: "cat",

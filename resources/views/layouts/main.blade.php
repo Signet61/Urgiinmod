@@ -74,17 +74,17 @@
         {{-- Nav links --}}
         <div class="flex gap-1.5 flex-wrap items-center">
             <a href="{{ route('family-tree') }}"
-               class="font-bubblegum text-sm px-3 py-1.5 bg-green-400 hover:bg-green-500 text-white rounded-full no-underline transition-colors {{ request()->routeIs('family-tree') ? 'ring-2 ring-green-700' : '' }}">
-                🌳 Мод
+               class="font-bubblegum text-sm px-3 py-1.5 bg-green-400 hover:bg-green-500 text-white rounded-full no-underline transition-colors flex items-center gap-1.5 {{ request()->routeIs('family-tree') ? 'ring-2 ring-green-700' : '' }}">
+                <i data-lucide="tree-pine" class="w-4 h-4"></i> Мод
             </a>
             <a href="{{ route('game') }}"
-               class="font-bubblegum text-sm px-3 py-1.5 bg-orange-400 hover:bg-orange-500 text-white rounded-full no-underline transition-colors {{ request()->routeIs('game') ? 'ring-2 ring-orange-700' : '' }}">
-                🎮 Тоглоом
+               class="font-bubblegum text-sm px-3 py-1.5 bg-orange-400 hover:bg-orange-500 text-white rounded-full no-underline transition-colors flex items-center gap-1.5 {{ request()->routeIs('game') ? 'ring-2 ring-orange-700' : '' }}">
+                <i data-lucide="gamepad-2" class="w-4 h-4"></i> Тоглоом
             </a>
             @auth
                 <a href="{{ route('dashboard') }}"
-                   class="font-bubblegum text-sm px-3 py-1.5 bg-blue-400 hover:bg-blue-500 text-white rounded-full no-underline transition-colors {{ request()->routeIs('dashboard') ? 'ring-2 ring-blue-700' : '' }}">
-                    🏠 Самбар
+                   class="font-bubblegum text-sm px-3 py-1.5 bg-blue-400 hover:bg-blue-500 text-white rounded-full no-underline transition-colors flex items-center gap-1.5 {{ request()->routeIs('dashboard') ? 'ring-2 ring-blue-700' : '' }}">
+                    <i data-lucide="house" class="w-4 h-4"></i> Самбар
                 </a>
                 <a href="{{ route('profile.edit') }}"
                    class="flex items-center gap-1.5 px-2 py-1 rounded-full no-underline transition-colors hover:bg-white/50 {{ request()->routeIs('profile.*') ? 'ring-2 ring-purple-400 bg-white/40' : '' }}">
@@ -101,12 +101,12 @@
                 </form>
             @else
                 <a href="{{ route('login') }}"
-                   class="font-bubblegum text-sm px-3 py-1.5 bg-purple-400 hover:bg-purple-500 text-white rounded-full no-underline transition-colors">
-                    🔑 Нэвтрэх
+                   class="font-bubblegum text-sm px-3 py-1.5 bg-purple-400 hover:bg-purple-500 text-white rounded-full no-underline transition-colors flex items-center gap-1.5">
+                    <i data-lucide="key-round" class="w-4 h-4"></i> Нэвтрэх
                 </a>
                 <a href="{{ route('register') }}"
-                   class="font-bubblegum text-sm px-3 py-1.5 bg-pink-400 hover:bg-pink-500 text-white rounded-full no-underline transition-colors">
-                    📝 Бүртгэл
+                   class="font-bubblegum text-sm px-3 py-1.5 bg-pink-400 hover:bg-pink-500 text-white rounded-full no-underline transition-colors flex items-center gap-1.5">
+                    <i data-lucide="pencil-line" class="w-4 h-4"></i> Бүртгэл
                 </a>
             @endauth
         </div>

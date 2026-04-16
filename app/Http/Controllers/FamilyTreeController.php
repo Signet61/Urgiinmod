@@ -40,7 +40,7 @@ class FamilyTreeController extends Controller
             'photo' => $photoPath,
         ]);
 
-        return redirect()->route('family-tree')->with('success', $request->name . ' нэмэгдлээ! 🎉');
+        return redirect()->route('family-tree')->with('success', $request->name . ' нэмэгдлээ!');
     }
 
     public function destroy(FamilyMember $familyMember)

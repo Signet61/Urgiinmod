@@ -39,9 +39,11 @@
 {{-- Header card --}}
 <div class="glass rounded-3xl shadow-2xl p-5 mb-4">
     <div class="flex items-end gap-4">
-        <x-deer message="Тоглоом тоглоцгооё! 🎮" size="sm" />
+        <x-deer message="Тоглоом тоглоцгооё!" size="sm" />
         <div class="flex-1">
-            <h1 class="font-bubblegum text-3xl text-orange-700">🎮 Тоглоом</h1>
+            <h1 class="font-bubblegum text-3xl text-orange-700 flex items-center gap-2">
+                <i data-lucide="gamepad-2" class="w-7 h-7"></i> Тоглоом
+            </h1>
             <p class="text-sm font-bold text-gray-500">Хосыг олоорой!</p>
         </div>
     </div>
@@ -53,48 +55,64 @@
 
     {{-- Start screen --}}
     <div id="gs-start" class="text-center py-5 px-2.5">
-        <div class="text-6xl mb-2.5">🃏</div>
+        <div class="mb-2.5 flex justify-center">
+            <i data-lucide="layers" class="w-16 h-16 text-orange-400"></i>
+        </div>
         <div class="font-bubblegum text-2xl text-green-800 mb-2">Matching Pairs тоглоом!</div>
         <div class="text-sm text-gray-500 font-bold mb-5">
             Гэр бүлийн гишүүдийн хос картыг олоорой.<br>
             Нэр болон зургийг хослуулаарай!
         </div>
         <div class="text-xs text-gray-400 mb-4">Тоглохын тулд дор хаяж 2 гишүүн хэрэгтэй!</div>
-        <button class="font-bubblegum text-lg px-9 py-3 bg-orange-300 text-orange-800 border-0 rounded-full cursor-pointer shadow transition-transform hover:-translate-y-0.5"
-                onclick="startGame()">🚀 Тоглоом эхлүүлэх!</button>
+        <button class="font-bubblegum text-lg px-9 py-3 bg-orange-300 text-orange-800 border-0 rounded-full cursor-pointer shadow transition-transform hover:-translate-y-0.5 inline-flex items-center gap-2"
+                onclick="startGame()">
+            <i data-lucide="rocket" class="w-5 h-5"></i> Тоглоом эхлүүлэх!
+        </button>
     </div>
 
     {{-- Game board --}}
     <div id="gs-board" style="display:none">
-        <div class="font-bubblegum text-2xl text-orange-700 text-center mb-1">🃏 Хосыг ол!</div>
+        <div class="font-bubblegum text-2xl text-orange-700 text-center mb-1 flex items-center justify-center gap-2">
+            <i data-lucide="layers" class="w-6 h-6"></i> Хосыг ол!
+        </div>
         <div class="text-center text-sm text-gray-500 font-bold mb-3">Нэр болон нүүрийг хослуулаарай</div>
         <div class="bg-orange-100 rounded-full h-3 mb-1.5 overflow-hidden">
             <div class="h-full rounded-full bg-orange-400 transition-all duration-300" id="sbar" style="width:0%"></div>
         </div>
         <div class="text-center text-xs font-black text-orange-700 mb-4" id="sbar-txt">0 / 0 хос олдсон</div>
         <div class="flex items-center justify-center gap-2.5 mb-2.5">
-            <span class="text-xl">⏱️</span>
+            <i data-lucide="timer" class="w-5 h-5 text-orange-500"></i>
             <span class="font-bubblegum text-xl text-orange-700 min-w-[40px] text-center" id="timer-val">0</span>
             <span class="text-sm font-black text-gray-400" id="moves-val">0 нүүлт</span>
         </div>
         <div class="grid grid-cols-4 gap-2 mb-4 sm:grid-cols-3" id="match-grid"></div>
         <div class="text-center">
-            <button class="font-bubblegum text-lg px-9 py-3 bg-orange-300 text-orange-800 border-0 rounded-full cursor-pointer shadow"
-                    onclick="startGame()">🔄 Дахин эхлэх</button>
+            <button class="font-bubblegum text-lg px-9 py-3 bg-orange-300 text-orange-800 border-0 rounded-full cursor-pointer shadow inline-flex items-center gap-2"
+                    onclick="startGame()">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i> Дахин эхлэх
+            </button>
         </div>
     </div>
 
     {{-- Result screen --}}
     <div id="gs-result" style="display:none" class="text-center py-5 px-2.5">
-        <div class="text-6xl mb-2.5" id="res-emoji">🏆</div>
-        <div class="text-3xl tracking-widest mb-3" id="res-stars">⭐⭐⭐</div>
+        <div class="mb-2.5 flex justify-center" id="res-emoji">
+            <i data-lucide="trophy" class="w-16 h-16 text-yellow-500"></i>
+        </div>
+        <div class="flex justify-center gap-1 mb-3" id="res-stars">
+            <i data-lucide="star" class="w-8 h-8 text-yellow-400 fill-yellow-400"></i>
+            <i data-lucide="star" class="w-8 h-8 text-yellow-400 fill-yellow-400"></i>
+            <i data-lucide="star" class="w-8 h-8 text-yellow-400 fill-yellow-400"></i>
+        </div>
         <div class="font-bubblegum text-2xl text-green-800 mb-2" id="res-title">Гайхалтай!</div>
         <div class="text-sm text-gray-500 font-bold mb-5" id="res-msg"></div>
-        <button class="font-bubblegum text-lg px-9 py-3 bg-green-400 text-green-900 border-0 rounded-full cursor-pointer shadow mx-1.5 transition-transform hover:-translate-y-0.5"
-                onclick="startGame()">🔄 Дахин тоглох</button>
+        <button class="font-bubblegum text-lg px-9 py-3 bg-green-400 text-green-900 border-0 rounded-full cursor-pointer shadow mx-1.5 transition-transform hover:-translate-y-0.5 inline-flex items-center gap-2"
+                onclick="startGame()">
+            <i data-lucide="refresh-cw" class="w-5 h-5"></i> Дахин тоглох
+        </button>
         <a href="{{ route('family-tree') }}"
-           class="font-bubblegum text-lg px-9 py-3 bg-purple-300 text-purple-900 rounded-full no-underline shadow mx-1.5 transition-transform hover:-translate-y-0.5 inline-block">
-            🌳 Ургийн мод харах
+           class="font-bubblegum text-lg px-9 py-3 bg-purple-300 text-purple-900 rounded-full no-underline shadow mx-1.5 transition-transform hover:-translate-y-0.5 inline-flex items-center gap-2">
+            <i data-lucide="tree-pine" class="w-5 h-5"></i> Ургийн мод харах
         </a>
     </div>
 </div>
@@ -181,6 +199,7 @@
         document.getElementById('gs-result').style.display = 'none';
         document.getElementById('gs-board').style.display  = 'block';
         updateScore(); renderBoard();
+        window.createLucideIcons();
     }
 
     function renderBoard() {
@@ -253,14 +272,33 @@
         document.getElementById('gs-result').style.display = 'block';
         const mv = gameState.moves, t = gameState.timer, total = gameState.cards.length / 2;
         const ratio = mv / total;
-        let stars, emoji, title, msg;
-        if (ratio <= 1.8)   { stars='⭐⭐⭐'; emoji='🏆'; title='Аварга байна!';  msg=`${mv} нүүлт, ${t} секундэд бүгдийг олов!`; }
-        else if(ratio <= 3) { stars='⭐⭐';   emoji='😊'; title='Маш сайн!';      msg=`${mv} нүүлт, ${t} секундэд дуусгалаа!`; }
-        else                { stars='⭐';     emoji='💪'; title='Баяр хүргэе!';   msg=`${mv} нүүлт хийлээ. Дараа илүү хурдан болно!`; }
-        document.getElementById('res-stars').textContent = stars;
-        document.getElementById('res-emoji').textContent = emoji;
+
+        const starFull  = '<i data-lucide="star" class="w-8 h-8 text-yellow-400 fill-yellow-400"></i>';
+        const starEmpty = '<i data-lucide="star" class="w-8 h-8 text-gray-300"></i>';
+        let emojiIcon, starsHtml, title, msg;
+
+        if (ratio <= 1.8) {
+            emojiIcon = '<i data-lucide="trophy" class="w-16 h-16 text-yellow-500"></i>';
+            starsHtml = starFull.repeat(3);
+            title = 'Аварга байна!';
+            msg   = `${mv} нүүлт, ${t} секундэд бүгдийг олов!`;
+        } else if (ratio <= 3) {
+            emojiIcon = '<i data-lucide="smile" class="w-16 h-16 text-green-500"></i>';
+            starsHtml = starFull.repeat(2) + starEmpty;
+            title = 'Маш сайн!';
+            msg   = `${mv} нүүлт, ${t} секундэд дуусгалаа!`;
+        } else {
+            emojiIcon = '<i data-lucide="dumbbell" class="w-16 h-16 text-blue-500"></i>';
+            starsHtml = starFull + starEmpty.repeat(2);
+            title = 'Баяр хүргэе!';
+            msg   = `${mv} нүүлт хийлээ. Дараа илүү хурдан болно!`;
+        }
+
+        document.getElementById('res-emoji').innerHTML = emojiIcon;
+        document.getElementById('res-stars').innerHTML = starsHtml;
         document.getElementById('res-title').textContent = title;
         document.getElementById('res-msg').textContent   = msg;
+        window.createLucideIcons();
         bigCelebrate();
     }
 
