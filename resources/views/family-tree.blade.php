@@ -86,37 +86,19 @@
 
 {{-- Flash messages --}}
 @if(session('success'))
-    <div class="glass rounded-2xl px-4 py-3 mb-3 text-green-800 font-black text-center border border-green-300 flex items-center justify-center gap-2">
-        <i data-lucide="party-popper" class="w-5 h-5"></i> {{ session('success') }}
+    <div class="glass rounded-2xl px-4 py-3 mb-3 text-green-800 font-black text-center border border-green-300">
+        🎉 {{ session('success') }}
     </div>
 @endif
 
-{{-- Guest save-to-account banner --}}
-@guest
-<div class="glass rounded-2xl px-4 py-3 mb-3 border border-yellow-300 flex items-center gap-3 flex-wrap">
-    <span class="text-sm font-bold text-yellow-800 flex-1 flex items-center gap-1.5">
-        <i data-lucide="save" class="w-4 h-4"></i>
-        Нэвтэрснээр ургийн модоо дансандаа хадгалах боломжтой!
-    </span>
-    <div class="flex gap-2">
-        <a href="{{ route('login') }}" class="font-bubblegum text-sm px-4 py-1.5 bg-purple-400 text-white rounded-full no-underline hover:bg-purple-500 flex items-center gap-1.5">
-            <i data-lucide="key-round" class="w-3.5 h-3.5"></i> Нэвтрэх
-        </a>
-        <a href="{{ route('register') }}" class="font-bubblegum text-sm px-4 py-1.5 bg-pink-400 text-white rounded-full no-underline hover:bg-pink-500 flex items-center gap-1.5">
-            <i data-lucide="pencil-line" class="w-3.5 h-3.5"></i> Бүртгэл
-        </a>
-    </div>
-</div>
-@endguest
+
 
 {{-- ── Header card ── --}}
 <div class="glass rounded-3xl shadow-2xl p-5 mb-4">
     <div class="flex items-end gap-4">
-        <x-deer message="Ургийн модоо харцгаая!" msgId="deer-msg" size="sm" />
+        <x-deer message="Ургийн модоо харцгаая! 🌳" msgId="deer-msg" size="sm" />
         <div class="flex-1">
-            <h1 class="font-bubblegum text-3xl text-green-800 flex items-center gap-2">
-                <i data-lucide="tree-pine" class="w-7 h-7"></i> Ургийн Мод
-            </h1>
+            <h1 class="font-bubblegum text-3xl text-green-800">🌳 Ургийн Мод</h1>
             <p class="text-sm font-bold text-gray-500">Гэр бүлийнхнээ таниарай</p>
         </div>
     </div>
@@ -125,12 +107,12 @@
 {{-- ── Tab nav ── --}}
 <div class="flex gap-2 justify-center my-3 flex-wrap">
     <button id="nb-tree" onclick="goTab('tree')"
-            class="nb-tree act font-bubblegum text-base px-5 py-2.5 border-0 rounded-full cursor-pointer shadow transition-transform hover:-translate-y-0.5 flex items-center gap-1.5">
-        <i data-lucide="tree-pine" class="w-4 h-4"></i> Ургийн мод
+            class="nb-tree act font-bubblegum text-base px-5 py-2.5 border-0 rounded-full cursor-pointer shadow transition-transform hover:-translate-y-0.5">
+        🌳 Ургийн мод
     </button>
     <button id="nb-add" onclick="goTab('add')"
-            class="nb-add font-bubblegum text-base px-5 py-2.5 border-0 rounded-full cursor-pointer shadow transition-transform hover:-translate-y-0.5 flex items-center gap-1.5">
-        <i data-lucide="plus" class="w-4 h-4"></i> Гишүүн нэмэх
+            class="nb-add font-bubblegum text-base px-5 py-2.5 border-0 rounded-full cursor-pointer shadow transition-transform hover:-translate-y-0.5">
+        ➕ Гишүүн нэмэх
     </button>
 </div>
 
@@ -145,27 +127,32 @@
                 <div class="font-bubblegum text-2xl text-green-800" id="pop-name"></div>
                 <div class="text-sm font-bold text-gray-400 my-1" id="pop-rel"></div>
                 <div class="text-sm text-gray-600 leading-relaxed mb-4" id="pop-bio"></div>
-                @auth
-                <form method="POST" id="pop-delete-form" action="" class="inline">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit"
-                            class="bg-red-300 text-red-900 border-0 rounded-full px-4 py-1.5 font-nunito font-black text-sm cursor-pointer mr-2 inline-flex items-center gap-1"
-                            onclick="return confirm('Устгах уу?')">
-                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Устгах
+                <div class="flex flex-wrap gap-2 justify-center">
+                    {{-- Edit button (everyone) --}}
+                    <button onclick="editMember()"
+                            class="bg-blue-300 text-blue-900 border-0 rounded-full px-4 py-1.5 font-nunito font-black text-sm cursor-pointer hover:bg-blue-400 transition-colors">
+                        ✏️ Засах
                     </button>
-                </form>
-                @else
-                <button id="pop-delete-local"
-                        class="bg-red-300 text-red-900 border-0 rounded-full px-4 py-1.5 font-nunito font-black text-sm cursor-pointer mr-2 inline-flex items-center gap-1"
-                        onclick="deleteLocal()">
-                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Устгах
-                </button>
-                @endauth
-                <button class="bg-pink-400 text-white border-0 rounded-full px-6 py-2 font-nunito font-black text-base cursor-pointer inline-flex items-center gap-1"
-                        onclick="closePopup()">
-                    <i data-lucide="x" class="w-4 h-4"></i> Хаах
-                </button>
+                    {{-- Delete: server (auth) or local (guest) --}}
+                    @auth
+                    <form method="POST" id="pop-delete-form" action="" class="inline m-0">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit"
+                                class="bg-red-300 text-red-900 border-0 rounded-full px-4 py-1.5 font-nunito font-black text-sm cursor-pointer hover:bg-red-400 transition-colors"
+                                onclick="return confirm('Устгах уу?')">🗑 Устгах</button>
+                    </form>
+                    @else
+                    <button onclick="deleteLocal()"
+                            class="bg-red-300 text-red-900 border-0 rounded-full px-4 py-1.5 font-nunito font-black text-sm cursor-pointer hover:bg-red-400 transition-colors">
+                        🗑 Устгах
+                    </button>
+                    @endauth
+                    <button onclick="closePopup()"
+                            class="bg-pink-400 hover:bg-pink-500 text-white border-0 rounded-full px-6 py-1.5 font-nunito font-black text-sm cursor-pointer transition-colors">
+                        💛 Хаах
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -174,20 +161,10 @@
 {{-- ══ ADD PANEL ══ --}}
 <div class="panel" id="p-add">
     <div class="glass rounded-3xl p-5 shadow-xl">
-        <h2 class="font-bubblegum text-2xl text-green-800 text-center mb-4 flex items-center justify-center gap-2">
-            <i data-lucide="sparkles" class="w-6 h-6"></i> Шинэ гишүүн нэмэх
-        </h2>
+        <h2 id="add-title" class="font-bubblegum text-2xl text-green-800 text-center mb-4">✨ Шинэ гишүүн нэмэх</h2>
 
         {{-- Guest: local-save notice --}}
-        @guest
-        <div class="flex items-center gap-2 bg-yellow-50 border border-yellow-300 rounded-2xl px-4 py-2.5 mb-3 text-sm font-bold text-yellow-800">
-            <i data-lucide="save" class="w-4 h-4 shrink-0"></i>
-            <span>Зочин горимд зөвхөн энэ хөтчид хадгалагдана.
-                <a href="{{ route('login') }}" class="text-purple-600 underline">Нэвтэрснээр</a>
-                дансандаа хадгалагдана.
-            </span>
-        </div>
-        @endguest
+      
 
         <form id="add-form"
               method="POST" action="{{ route('family-tree.store') }}"
@@ -198,18 +175,14 @@
             @if($errors->any())
                 <div class="bg-red-100 text-red-800 rounded-xl px-4 py-2.5 mb-3 font-black">
                     @foreach($errors->all() as $error)
-                        <div class="flex items-center gap-1.5">
-                            <i data-lucide="triangle-alert" class="w-3.5 h-3.5 shrink-0"></i> {{ $error }}
-                        </div>
+                        <div>⚠️ {{ $error }}</div>
                     @endforeach
                 </div>
             @endif
 
             {{-- Name --}}
             <div class="mb-3">
-                <label class="flex items-center gap-1.5 font-black text-sm text-gray-600 mb-1">
-                    <i data-lucide="user" class="w-4 h-4"></i> Нэр
-                </label>
+                <label class="block font-black text-sm text-gray-600 mb-1">👤 Нэр</label>
                 <input name="name" type="text" placeholder="Жишээ: Баяр өвөө..."
                        value="{{ old('name') }}"
                        class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-2xl text-sm outline-none focus:border-green-400 bg-white transition-colors"/>
@@ -217,9 +190,7 @@
 
             {{-- Relation --}}
             <div class="mb-3">
-                <label class="flex items-center gap-1.5 font-black text-sm text-gray-600 mb-1">
-                    <i data-lucide="users" class="w-4 h-4"></i> Хэн бэ?
-                </label>
+                <label class="block font-black text-sm text-gray-600 mb-1">👨‍👩‍👧 Хэн бэ?</label>
                 <select name="rel"
                         class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-2xl text-sm outline-none focus:border-green-400 bg-white transition-colors">
                     <option value="">-- Сонгоно уу --</option>
@@ -239,18 +210,14 @@
 
             {{-- Bio --}}
             <div class="mb-3">
-                <label class="flex items-center gap-1.5 font-black text-sm text-gray-600 mb-1">
-                    <i data-lucide="message-circle" class="w-4 h-4"></i> Тэмдэглэл
-                </label>
+                <label class="block font-black text-sm text-gray-600 mb-1">💬 Тэмдэглэл</label>
                 <textarea name="bio" placeholder="Жишээ: Бялуу хийдэг, загас барьдаг..."
                           class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-2xl text-sm outline-none focus:border-green-400 bg-white resize-y min-h-[72px] transition-colors">{{ old('bio') }}</textarea>
             </div>
 
             {{-- Avatar picker --}}
             <div class="mb-3">
-                <label class="flex items-center gap-1.5 font-black text-sm text-gray-600 mb-1">
-                    <i data-lucide="image" class="w-4 h-4"></i> Аватар сонгох
-                </label>
+                <label class="block font-black text-sm text-gray-600 mb-1">🖼️ Аватар сонгох</label>
                 <div class="flex flex-wrap gap-2 mt-1" id="emoji-row">
                     @php
                         $avatars = [
@@ -270,20 +237,20 @@
 
             {{-- Photo upload --}}
             <div class="mb-3">
-                <label class="flex items-center gap-1.5 font-black text-sm text-gray-600 mb-1">
-                    <i data-lucide="camera" class="w-4 h-4"></i> Зураг оруулах (заавал биш)
-                </label>
+                <label class="block font-black text-sm text-gray-600 mb-1">📷 Зураг оруулах (заавал биш)</label>
                 <label class="border-2 border-dashed border-green-300 rounded-2xl p-5 text-center cursor-pointer hover:border-green-500 hover:bg-green-50 transition-colors block">
                     <input type="file" name="photo" accept="image/*" onchange="previewImg(this)" class="hidden"/>
                     <div id="upload-inner">
-                        <div class="flex justify-center mb-1"><i data-lucide="camera" class="w-10 h-10 text-gray-300"></i></div>
+                        <div class="text-4xl">📸</div>
                         <div class="text-xs text-gray-400 mt-1">Дарж зураг оруулна уу</div>
                     </div>
                 </label>
             </div>
 
-            <button type="submit" class="add-btn flex items-center justify-center gap-2">
-                <i data-lucide="sprout" class="w-5 h-5"></i> Нэмэх!
+            <button type="submit" id="add-submit-btn" class="add-btn">🌱 Нэмэх!</button>
+            <button type="button" id="add-cancel-btn" onclick="cancelEdit()" style="display:none"
+                    class="w-full mt-2 py-2.5 text-sm font-black text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 border-0 rounded-full cursor-pointer transition-colors">
+                ✕ Цуцлах
             </button>
         </form>
     </div>
@@ -332,7 +299,7 @@
         { id:6, name:'Эрдэнэ дүү', rel:'sib', emoji:'image/eregtei_duu.png',   bio:'Хурдан гүйдэг',      photo:null },
     ];
 
-    let members, selEmoji = 'image/jaal_huu.png', photoData = null, currentPopupId = null;
+    let members, selEmoji = 'image/jaal_huu.png', photoData = null, currentPopupId = null, editingId = null;
     function isImgPath(e) { return e && (e.startsWith('image/') || e.startsWith('/') || e.startsWith('data:') || e.startsWith('http')); }
 
     function loadMembers() {
@@ -361,8 +328,8 @@
         const msg = document.getElementById('deer-msg');
         if (msg) {
             msg.textContent = t === 'add'
-                ? 'Шинэ гишүүн нэмцгээе!'
-                : 'Ургийн модоо харцгаая!';
+                ? 'Шинэ гишүүн нэмцгээе! ➕'
+                : 'Ургийн модоо харцгаая! 🌳';
         }
         if (t === 'tree') renderTree();
     }
@@ -371,17 +338,13 @@
     function renderTree() {
         const tc = document.getElementById('tree-content');
         if (!members || !members.length) {
-            tc.innerHTML = `<div class="empty-tree">
-                <div class="big flex justify-center"><i data-lucide="sprout" style="width:56px;height:56px;color:#66bb6a"></i></div>
-                <p>Гишүүн байхгүй байна.<br>"Гишүүн нэмэх" дарж нэмнэ үү!</p>
-            </div>`;
-            window.createLucideIcons();
+            tc.innerHTML = '<div class="empty-tree"><div class="big">🌱</div><p>Гишүүн байхгүй байна.<br>"Гишүүн нэмэх" дарж нэмнэ үү!</p></div>';
             return;
         }
         const gens = [
-            { lbl:'Өвөө эмээ нар', keys:['gpl','gml','gpr','gmr'] },
-            { lbl:'Эцэг эхчүүд',   keys:['dad','mom','uncle','aunt'] },
-            { lbl:'Бид нар',        keys:['me','sib','cousin'] },
+            { lbl:'👴👵 Өвөө эмээ нар', keys:['gpl','gml','gpr','gmr'] },
+            { lbl:'👨👩 Эцэг эхчүүд',   keys:['dad','mom','uncle','aunt'] },
+            { lbl:'👦👧 Бид нар',        keys:['me','sib','cousin'] },
         ];
         let h = '';
         let prevHad = false;
@@ -428,7 +391,7 @@
         const m = members.find(x => x.id === id); if (!m) return;
         const r = RELS[m.rel] || {};
         document.getElementById('pop-name').textContent = m.name;
-        document.getElementById('pop-rel').textContent  = (r.lbl||m.rel);
+        document.getElementById('pop-rel').textContent  = (r.lbl||m.rel) + (m.rel==='me'?' ⭐':'');
         document.getElementById('pop-bio').textContent  = m.bio || '';
         document.getElementById('pop-av-area').innerHTML = m.photo
             ? `<img class="pop-img" src="${m.photo}" alt="${m.name}"/>`
@@ -438,7 +401,6 @@
         const delForm = document.getElementById('pop-delete-form');
         if (delForm) delForm.action = `/family-tree/${id}`;
         document.getElementById('popup-overlay').classList.add('show');
-        window.createLucideIcons();
     }
     function closePopup(e) {
         if (!e || e.target === document.getElementById('popup-overlay'))
@@ -454,59 +416,28 @@
         if (input) input.value = el.dataset.e;
     }
 
-    // ── Photo preview (stores base64 for guest use) ──
+    // ── Photo preview (base64 for guests, object URL for auth) ──
     function previewImg(inp) {
         const f = inp.files[0]; if (!f) return;
         if (!IS_AUTH) {
             const reader = new FileReader();
             reader.onload = ev => {
                 photoData = ev.target.result;
-                document.getElementById('upload-inner').innerHTML =
-                    `<img class="prev-img" src="${photoData}"/>
-                     <div class="text-xs text-green-600 mt-1 font-black text-center flex items-center justify-center gap-1">
-                         <i data-lucide="check" style="width:12px;height:12px"></i> Бэлэн!
-                     </div>`;
-                window.createLucideIcons();
+                showUploadPreview(photoData);
             };
             reader.readAsDataURL(f);
         } else {
-            document.getElementById('upload-inner').innerHTML =
-                `<img class="prev-img" src="${URL.createObjectURL(f)}"/>
-                 <div class="text-xs text-green-600 mt-1 font-black text-center flex items-center justify-center gap-1">
-                     <i data-lucide="check" style="width:12px;height:12px"></i> Бэлэн!
-                 </div>`;
-            window.createLucideIcons();
+            showUploadPreview(URL.createObjectURL(f));
         }
     }
+    function showUploadPreview(src) {
+        document.getElementById('upload-inner').innerHTML =
+            `<img class="prev-img" src="${src}"/>
+             <div class="text-xs text-green-600 mt-1 font-black text-center">✓ Бэлэн!</div>`;
+    }
 
-    // ── Guest: save to localStorage and re-render ──
-    function handleAddSubmit(e) {
-        if (IS_AUTH) return true;
-
-        e.preventDefault();
-        const name = document.querySelector('[name="name"]').value.trim();
-        const rel  = document.querySelector('[name="rel"]').value;
-        const bio  = document.querySelector('[name="bio"]').value.trim();
-        const btn  = document.querySelector('.add-btn');
-
-        if (!name || !rel) {
-            btn.innerHTML = '<i data-lucide="triangle-alert" style="width:18px;height:18px;display:inline-block;vertical-align:middle;margin-right:4px"></i>Нэр болон харилцааг оруулна уу!';
-            btn.style.background = '#ef5350';
-            window.createLucideIcons();
-            setTimeout(() => {
-                btn.innerHTML = '<i data-lucide="sprout" style="width:18px;height:18px;display:inline-block;vertical-align:middle;margin-right:4px"></i>Нэмэх!';
-                btn.style.background = '';
-                window.createLucideIcons();
-            }, 1800);
-            return false;
-        }
-
-        const nxtId = Math.max(...members.map(m => m.id), 0) + 1;
-        members.push({ id: nxtId, name, rel, emoji: selEmoji, bio: bio || 'Гэр бүлийн гишүүн', photo: photoData });
-
-        try { localStorage.setItem('fm_members', JSON.stringify(members)); } catch(ex) {}
-
-        // Reset form
+    // ── Reset the add form to its blank state ──
+    function resetAddForm() {
         document.querySelector('[name="name"]').value = '';
         document.querySelector('[name="rel"]').value  = '';
         document.querySelector('[name="bio"]').value  = '';
@@ -515,18 +446,126 @@
         document.querySelectorAll('.emo-btn').forEach((b, i) => b.classList.toggle('sel', i === 0));
         document.getElementById('fi-emoji').value = selEmoji;
         document.getElementById('upload-inner').innerHTML =
-            `<div class="flex justify-center mb-1"><i data-lucide="camera" style="width:40px;height:40px;color:#d1d5db"></i></div>
-             <div class="text-xs text-gray-400 mt-1">Дарж зураг оруулна уу</div>`;
+            `<div class="text-4xl">📸</div><div class="text-xs text-gray-400 mt-1">Дарж зураг оруулна уу</div>`;
+    }
 
-        btn.innerHTML = '<i data-lucide="party-popper" style="width:18px;height:18px;display:inline-block;vertical-align:middle;margin-right:4px"></i>Нэмэгдлээ!';
-        btn.style.background = '#ff9800';
-        window.createLucideIcons();
-        setTimeout(() => {
-            btn.innerHTML = '<i data-lucide="sprout" style="width:18px;height:18px;display:inline-block;vertical-align:middle;margin-right:4px"></i>Нэмэх!';
-            btn.style.background = '';
-            window.createLucideIcons();
-        }, 1400);
-        setTimeout(() => goTab('tree'), 600);
+    // ── Open add panel in EDIT mode pre-filled with existing member ──
+    function editMember() {
+        const m = members.find(x => x.id === currentPopupId); if (!m) return;
+        editingId = m.id;
+        closePopup();
+        goTab('add');
+
+        // Pre-fill fields
+        document.querySelector('[name="name"]').value = m.name;
+        document.querySelector('[name="rel"]').value  = m.rel;
+        document.querySelector('[name="bio"]').value  = m.bio || '';
+
+        // Avatar
+        selEmoji = m.emoji;
+        document.querySelectorAll('.emo-btn').forEach(b => b.classList.toggle('sel', b.dataset.e === m.emoji));
+        document.getElementById('fi-emoji').value = m.emoji;
+
+        // Existing photo preview
+        if (m.photo) {
+            photoData = IS_AUTH ? null : m.photo; // Auth: keep server photo; guest: reuse base64
+            showUploadPreview(m.photo);
+        }
+
+        // Switch UI to edit mode
+        document.getElementById('add-title').textContent        = '✏️ Гишүүн засах';
+        document.getElementById('add-submit-btn').textContent   = '💾 Хадгалах';
+        document.getElementById('add-submit-btn').style.background = '#1976d2';
+        document.getElementById('add-submit-btn').style.boxShadow  = '0 4px 0 #0d47a1';
+        document.getElementById('add-cancel-btn').style.display = 'block';
+        document.getElementById('deer-msg').textContent         = 'Мэдээллийг засаарай ✏️';
+    }
+
+    // ── Cancel edit, go back to plain add mode ──
+    function cancelEdit() {
+        editingId = null;
+        resetAddForm();
+        document.getElementById('add-title').textContent        = '✨ Шинэ гишүүн нэмэх';
+        document.getElementById('add-submit-btn').textContent   = '🌱 Нэмэх!';
+        document.getElementById('add-submit-btn').style.background = '';
+        document.getElementById('add-submit-btn').style.boxShadow  = '';
+        document.getElementById('add-cancel-btn').style.display = 'none';
+        document.getElementById('deer-msg').textContent         = 'Шинэ гишүүн нэмцгээе! ➕';
+    }
+
+    // ── Form submit handler (add + edit, guest + auth) ──
+    function handleAddSubmit(e) {
+        const name = document.querySelector('[name="name"]').value.trim();
+        const rel  = document.querySelector('[name="rel"]').value;
+        const bio  = document.querySelector('[name="bio"]').value.trim();
+        const btn  = document.getElementById('add-submit-btn');
+
+        // Validation
+        if (!name || !rel) {
+            e.preventDefault();
+            btn.textContent = '⚠️ Нэр болон харилцааг оруулна уу!';
+            btn.style.background = '#ef5350';
+            setTimeout(() => { btn.textContent = editingId ? '💾 Хадгалах' : '🌱 Нэмэх!'; btn.style.background = ''; }, 1800);
+            return false;
+        }
+
+        // ── AUTH users ──
+        if (IS_AUTH) {
+            if (editingId !== null) {
+                // Edit existing member: use fetch PATCH
+                e.preventDefault();
+                const fd = new FormData(document.getElementById('add-form'));
+                fd.append('_method', 'PATCH');
+                btn.textContent = '⏳ Хадгалж байна...';
+                btn.disabled = true;
+                fetch(`/family-tree/${editingId}`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                    body: fd,
+                })
+                .then(r => r.ok ? r.json() : Promise.reject(r))
+                .then(data => {
+                    const idx = members.findIndex(m => m.id === editingId);
+                    if (idx !== -1) members[idx] = data.member;
+                    cancelEdit();
+                    btn.disabled = false;
+                    goTab('tree');
+                })
+                .catch(() => {
+                    btn.textContent = '⚠️ Алдаа гарлаа!';
+                    btn.style.background = '#ef5350';
+                    btn.disabled = false;
+                    setTimeout(() => { btn.textContent = '💾 Хадгалах'; btn.style.background = ''; }, 2000);
+                });
+                return false;
+            }
+            return true; // Add mode: let form POST normally
+        }
+
+        // ── GUEST users (localStorage) ──
+        e.preventDefault();
+        if (editingId !== null) {
+            // Update existing
+            const idx = members.findIndex(m => m.id === editingId);
+            if (idx !== -1) {
+                members[idx] = { ...members[idx], name, rel, emoji: selEmoji, bio: bio || members[idx].bio };
+                if (photoData) members[idx].photo = photoData;
+            }
+            try { localStorage.setItem('fm_members', JSON.stringify(members)); } catch(ex) {}
+            cancelEdit();
+            btn.textContent = '✅ Засагдлаа!'; btn.style.background = '#ff9800';
+            setTimeout(() => { btn.textContent = '🌱 Нэмэх!'; btn.style.background = ''; }, 1200);
+            setTimeout(() => goTab('tree'), 600);
+        } else {
+            // Add new
+            const nxtId = Math.max(...members.map(m => m.id), 0) + 1;
+            members.push({ id: nxtId, name, rel, emoji: selEmoji, bio: bio || 'Гэр бүлийн гишүүн', photo: photoData });
+            try { localStorage.setItem('fm_members', JSON.stringify(members)); } catch(ex) {}
+            resetAddForm();
+            btn.textContent = '🎉 Нэмэгдлээ!'; btn.style.background = '#ff9800';
+            setTimeout(() => { btn.textContent = '🌱 Нэмэх!'; btn.style.background = ''; }, 1400);
+            setTimeout(() => goTab('tree'), 600);
+        }
         return false;
     }
 

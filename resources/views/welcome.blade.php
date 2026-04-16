@@ -32,7 +32,7 @@
         <a href="{{ route('family-tree') }}"
            class="font-bubblegum text-xl px-10 py-3 bg-green-500 hover:bg-green-400 text-white rounded-full no-underline transition-transform hover:-translate-y-1 active:translate-y-0.5 flex items-center gap-2"
            style="box-shadow:0 5px 0 #388e3c">
-            <i data-lucide="tree-pine" class="w-5 h-5"></i> Ургийн мод харах
+            <i data-lucide="tree-pine" class="w-5 h-5"></i> Ургийн модоо бүтээх
         </a>
         <a href="{{ route('game') }}"
            class="font-bubblegum text-xl px-10 py-3 bg-orange-400 hover:bg-orange-300 text-white rounded-full no-underline transition-transform hover:-translate-y-1 active:translate-y-0.5 flex items-center gap-2"
@@ -55,24 +55,7 @@
     </a>
 </div>
 @else
-<div class="glass rounded-3xl shadow-xl p-6">
-    <p class="text-center text-sm font-bold text-gray-600 mb-4 flex items-center justify-center gap-1.5">
-        <i data-lucide="lightbulb" class="w-4 h-4 text-yellow-500"></i>
-        Нэвтэрснээр өөрийн дансанд гэр бүлийн мэдээллийг хадгалах боломжтой!
-    </p>
-    <div class="flex gap-3 justify-center flex-wrap">
-        <a href="{{ route('login') }}"
-           class="font-bubblegum text-lg px-8 py-2.5 bg-purple-400 hover:bg-purple-500 text-white rounded-full no-underline transition-transform hover:-translate-y-0.5 flex items-center gap-2"
-           style="box-shadow:0 4px 0 #6a1b9a">
-            <i data-lucide="key-round" class="w-5 h-5"></i> Нэвтрэх
-        </a>
-        <a href="{{ route('register') }}"
-           class="font-bubblegum text-lg px-8 py-2.5 bg-pink-400 hover:bg-pink-500 text-white rounded-full no-underline transition-transform hover:-translate-y-0.5 flex items-center gap-2"
-           style="box-shadow:0 4px 0 #880e4f">
-            <i data-lucide="pencil-line" class="w-5 h-5"></i> Бүртгүүлэх
-        </a>
-    </div>
-</div>
+
 @endauth
 
 @endsection
