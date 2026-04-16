@@ -1,670 +1,494 @@
-<!DOCTYPE html>
-<html lang="mn">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $title ?? 'Миний Ургийн Мод' }}</title>
+@extends('layouts.main')
+@section('title', 'Ургийн Мод')
 
-    {{-- Google Fonts --}}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&family=Bubblegum+Sans&display=swap" rel="stylesheet">
+@push('styles')
+<style>
+    /* ── JS-toggled panels ── */
+    .panel     { display:none; }
+    .panel.act { display:block; }
+    .overlay   { display:none; position:absolute; inset:0; background:rgba(0,0,0,.45); z-index:50;
+                 align-items:flex-start; justify-content:center; padding-top:60px; min-height:400px; }
+    .overlay.show { display:flex; }
 
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&family=Bubblegum+Sans&display=swap');
-        *{box-sizing:border-box;margin:0;padding:0}
-        :root{
-            --sky1:#a8d8f0;--sky2:#c8ecb8;--leaf:#4caf50;--leaf2:#2e7d32;
-            --trunk:#795548;--sun:#ffd600;--pink:#f48fb1;--purple:#ce93d8;
-            --orange:#ffb74d;--teal:#4db6ac;--red:#ef5350;--blue:#42a5f5;
-            --cream:#fffde7;--white:#ffffff;
-            --card-w:120px;--card-h:140px;
-        }
-        body{font-family:'Nunito',sans-serif;background:linear-gradient(180deg,#b3e0f7 0%,#c8ecb8 55%,#81c784 100%);min-height:100vh;overflow-x:hidden}
+    /* ── Tab button color states ── */
+    .nb-tree             { background:#66bb6a; color:#1b5e20; }
+    .nb-tree.act         { background:#2e7d32; color:#c8e6c9; }
+    .nb-add              { background:#f48fb1; color:#880e4f; }
+    .nb-add.act          { background:#c2185b; color:#fce4ec; }
 
-        /* ── Decorative sky ── */
-        .sky-deco{position:relative;height:70px;overflow:hidden}
-        .sun-el{position:absolute;right:30px;top:8px;width:52px;height:52px;background:var(--sun);border-radius:50%;animation:sunpulse 4s ease-in-out infinite}
-        @keyframes sunpulse{0%,100%{box-shadow:0 0 0 0 #ffd60066}50%{box-shadow:0 0 0 14px #ffd60022}}
-        .cloud{position:absolute;background:#fff;border-radius:40px;opacity:.88}
-        .cloud::before,.cloud::after{content:'';position:absolute;background:#fff;border-radius:50%}
-        .cl1{width:80px;height:28px;top:12px;left:18px}
-        .cl1::before{width:36px;height:36px;top:-16px;left:10px}
-        .cl1::after{width:26px;height:26px;top:-10px;left:36px}
-        .cl2{width:60px;height:22px;top:20px;left:160px}
-        .cl2::before{width:28px;height:28px;top:-12px;left:8px}
-        .cl2::after{width:20px;height:20px;top:-7px;left:28px}
-        .bird{position:absolute;font-size:16px;top:6px;left:260px;animation:bfly 14s linear infinite}
-        @keyframes bfly{from{transform:translateX(0)}to{transform:translateX(520px)}}
+    /* ── Tree node cards ── */
+    .pcard               { width:96px; display:flex; flex-direction:column; align-items:center;
+                           cursor:pointer; transition:transform .18s; }
+    .pcard:hover         { transform:translateY(-4px) scale(1.05); }
+    .avatar              { width:68px; height:68px; border-radius:50%; border:4px solid #fff;
+                           overflow:hidden; display:flex; align-items:center; justify-content:center;
+                           font-size:2rem; box-shadow:0 3px 10px rgba(0,0,0,.15); }
+    .avatar img          { width:100%; height:100%; object-fit:cover; }
+    .pname               { font-size:.78rem; font-weight:800; text-align:center;
+                           margin-top:4px; color:#2d2d2d; line-height:1.2; }
+    .prelabel            { font-size:.65rem; font-weight:700; padding:2px 8px; border-radius:20px;
+                           margin-top:3px; text-align:center; }
 
-        /* ── Main layout ── */
-        .app{max-width:860px;margin:0 auto;padding:0 12px 60px}
+    /* ── Generation layout ── */
+    .gen-section         { text-align:center; }
+    .gen-label           { font-family:'Bubblegum Sans',cursive; font-size:.82rem; color:#795548;
+                           letter-spacing:1px; margin-bottom:8px; }
+    .gen-row             { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; }
 
-        /* ── Nav tabs ── */
-        .nav{display:flex;gap:8px;justify-content:center;margin:10px 0 16px;flex-wrap:wrap}
-        .nav-btn{font-family:'Bubblegum Sans',cursive;font-size:1rem;padding:10px 22px;border:none;border-radius:50px;cursor:pointer;transition:transform .15s,box-shadow .15s;box-shadow:0 3px 0 rgba(0,0,0,.18)}
-        .nav-btn:hover{transform:translateY(-2px);box-shadow:0 5px 0 rgba(0,0,0,.16)}
-        .nav-btn:active{transform:translateY(1px);box-shadow:0 1px 0 rgba(0,0,0,.18)}
-        .nb-tree{background:#66bb6a;color:#1b5e20}
-        .nb-tree.act{background:#2e7d32;color:#c8e6c9}
-        .nb-add{background:#f48fb1;color:#880e4f}
-        .nb-add.act{background:#c2185b;color:#fce4ec}
-        .nb-game{background:#ffb74d;color:#e65100}
-        .nb-game.act{background:#e65100;color:#fff3e0}
+    /* ── Tree connector lines ── */
+    .tree-connector      { display:flex; justify-content:center; align-items:center;
+                           height:36px; position:relative; margin:2px 0; }
+    .tree-connector::before {
+        content:''; position:absolute; top:0; left:50%;
+        width:3px; height:100%; background:#a5d6a7;
+        transform:translateX(-50%);
+    }
 
-        /* ── Panel ── */
-        .panel{display:none}
-        .panel.act{display:block}
+    /* ── Couple bracket (connects two parents) ── */
+    .couple-bracket      { display:flex; align-items:center; justify-content:center;
+                           gap:6px; margin-bottom:4px; }
+    .couple-bracket .bline { flex:1; height:3px; background:#a5d6a7; max-width:60px; }
+    .couple-bracket .heart  { font-size:.9rem; }
 
-        /* ── Tree panel ── */
-        .tree-box{background:rgba(255,253,230,.93);border-radius:24px;padding:20px 16px;box-shadow:0 6px 24px rgba(0,0,0,.1)}
-        .gen-label{text-align:center;font-family:'Bubblegum Sans',cursive;font-size:.82rem;color:#795548;letter-spacing:1px;margin-bottom:6px}
-        .gen-row{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
-        .arr{text-align:center;font-size:1.3rem;color:#66bb6a;margin:2px 0}
+    /* ── Empty state ── */
+    .empty-tree          { text-align:center; padding:36px 20px; }
+    .empty-tree .big     { font-size:3.5rem; margin-bottom:10px; }
+    .empty-tree p        { font-weight:700; color:#666; font-size:.95rem; }
 
-        /* ── Person card ── */
-        .pcard{width:96px;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:transform .18s}
-        .pcard:hover{transform:translateY(-4px) scale(1.05)}
-        .avatar{width:68px;height:68px;border-radius:50%;border:4px solid #fff;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:2rem;position:relative;box-shadow:0 3px 10px rgba(0,0,0,.15)}
-        .avatar img{width:100%;height:100%;object-fit:cover}
-        .pname{font-size:.78rem;font-weight:800;text-align:center;margin-top:4px;color:#2d2d2d;line-height:1.2}
-        .prelabel{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:20px;margin-top:3px;text-align:center}
+    /* ── Add form ── */
+    .emo-btn             { width:42px; height:42px; border-radius:50%; border:3px solid transparent;
+                           cursor:pointer; display:flex; align-items:center; justify-content:center;
+                           background:#f5f5f5; transition:all .15s; }
+    .emo-btn.sel         { border-color:#66bb6a; background:#c8e6c9; transform:scale(1.1); }
+    .prev-img            { width:76px; height:76px; border-radius:50%; object-fit:cover;
+                           margin:0 auto; display:block; border:3px solid #66bb6a; }
+    .add-btn             { width:100%; padding:13px; background:#66bb6a; color:#fff; border:none;
+                           border-radius:50px; font-family:'Nunito',sans-serif; font-weight:900;
+                           font-size:1.05rem; cursor:pointer; margin-top:8px;
+                           transition:transform .15s,background .15s;
+                           box-shadow:0 4px 0 #388e3c; }
+    .add-btn:hover       { transform:translateY(-2px); background:#4caf50; }
+    .add-btn:active      { transform:translateY(2px); box-shadow:0 1px 0 #388e3c; }
 
-        /* ── Popup ── */
-        .overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:50;align-items:flex-start;justify-content:center;padding-top:60px;min-height:400px}
-        .overlay.show{display:flex}
-        .popup{background:#fffde7;border-radius:24px;padding:28px 22px;max-width:300px;width:90%;text-align:center;animation:popin .25s cubic-bezier(.34,1.56,.64,1)}
-        @keyframes popin{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
-        .pop-av{font-size:3.2rem;margin-bottom:6px}
-        .pop-img{width:88px;height:88px;border-radius:50%;object-fit:cover;margin:0 auto 8px;display:block;border:4px solid var(--orange)}
-        .pop-name{font-family:'Bubblegum Sans',cursive;font-size:1.5rem;color:#2e7d32}
-        .pop-rel{font-size:.85rem;font-weight:700;color:#888;margin:3px 0 10px}
-        .pop-bio{font-size:.9rem;color:#444;line-height:1.5;margin-bottom:14px}
-        .pop-close{background:#f48fb1;color:#fff;border:none;border-radius:50px;padding:9px 26px;font-family:'Nunito',sans-serif;font-weight:900;font-size:.95rem;cursor:pointer}
-        .empty-tree{text-align:center;padding:36px 20px}
-        .empty-tree .big{font-size:3.5rem;margin-bottom:10px}
-        .empty-tree p{font-weight:700;color:#666;font-size:.95rem}
+    /* ── Popup ── */
+    .pop-img             { width:88px; height:88px; border-radius:50%; object-fit:cover;
+                           margin:0 auto 8px; display:block; border:4px solid #ffb74d; }
+    .pop-av              { font-size:3.2rem; margin-bottom:6px; }
 
-        /* ── Add form ── */
-        .form-box{background:rgba(255,253,230,.95);border-radius:24px;padding:22px 18px;box-shadow:0 6px 24px rgba(0,0,0,.1)}
-        .form-title{font-family:'Bubblegum Sans',cursive;font-size:1.55rem;color:#2e7d32;text-align:center;margin-bottom:18px}
-        .fg{margin-bottom:14px}
-        .fg label{display:block;font-weight:800;font-size:.88rem;color:#444;margin-bottom:5px}
-        .fg input,.fg select,.fg textarea{width:100%;padding:11px 15px;border:2px solid #ddd;border-radius:14px;font-family:'Nunito',sans-serif;font-size:.92rem;outline:none;transition:border .2s;background:#fff}
-        .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:#66bb6a}
-        .fg textarea{resize:vertical;min-height:72px}
-        .emoji-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px}
-        .emo-btn{width:42px;height:42px;border-radius:50%;border:3px solid transparent;cursor:pointer;font-size:1.5rem;display:flex;align-items:center;justify-content:center;background:#f5f5f5;transition:all .15s}
-        .emo-btn.sel{border-color:#66bb6a;background:#c8e6c9;transform:scale(1.1)}
-        .upload-zone{border:2.5px dashed #a5d6a7;border-radius:14px;padding:18px;text-align:center;cursor:pointer;transition:all .2s;margin-top:7px}
-        .upload-zone:hover{border-color:#66bb6a;background:#f1f8e9}
-        .upload-zone input{display:none}
-        .prev-img{width:76px;height:76px;border-radius:50%;object-fit:cover;margin:0 auto;display:block;border:3px solid #66bb6a}
-        .add-btn{width:100%;padding:13px;background:#66bb6a;color:#fff;border:none;border-radius:50px;font-family:'Nunito',sans-serif;font-weight:900;font-size:1.05rem;cursor:pointer;margin-top:8px;transition:transform .15s,background .15s;box-shadow:0 4px 0 #388e3c}
-        .add-btn:hover{transform:translateY(-2px);background:#4caf50}
-        .add-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #388e3c}
+    @media(max-width:480px) {
+        .pcard  { width:76px; }
+        .avatar { width:56px; height:56px; }
+    }
+</style>
+@endpush
 
-        /* ── Game panel ── */
-        .game-box{background:rgba(255,253,230,.95);border-radius:24px;padding:20px 16px;box-shadow:0 6px 24px rgba(0,0,0,.1)}
-        .game-title{font-family:'Bubblegum Sans',cursive;font-size:1.6rem;color:#e65100;text-align:center;margin-bottom:4px}
-        .game-sub{text-align:center;font-size:.88rem;color:#777;font-weight:700;margin-bottom:14px}
+@section('content')
 
-        /* score bar */
-        .sbar-wrap{background:#ffe0b2;border-radius:50px;height:14px;margin-bottom:6px;overflow:hidden}
-        .sbar-fill{height:100%;border-radius:50px;background:#ff9800;transition:width .4s ease}
-        .sbar-txt{text-align:center;font-size:.82rem;font-weight:800;color:#e65100;margin-bottom:16px}
+{{-- Flash messages --}}
+@if(session('success'))
+    <div class="glass rounded-2xl px-4 py-3 mb-3 text-green-800 font-black text-center border border-green-300">
+        🎉 {{ session('success') }}
+    </div>
+@endif
 
-        /* matching grid */
-        .match-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
-        .mcard{border-radius:14px;cursor:pointer;transition:transform .15s;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:3px solid transparent;position:relative;overflow:hidden;min-height:80px}
-        .mcard:hover:not(.matched):not(.disabled){transform:scale(1.04)}
-        .mcard .mcard-inner{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%}
-        .mcard.face-down{background:#a5d6a7;border-color:#66bb6a;cursor:pointer}
-        .mcard.face-down .mcard-inner{display:none}
-        .mcard.face-down::after{content:'?';font-family:'Bubblegum Sans',cursive;font-size:1.8rem;color:#2e7d32;display:flex;align-items:center;justify-content:center;position:absolute;inset:0}
-        .mcard.flipped,.mcard.matched{background:#fff;border-color:#ffa726}
-        .mcard.matched{border-color:#66bb6a;background:#c8e6c9;animation:matchpop .35s cubic-bezier(.34,1.56,.64,1)}
-        @keyframes matchpop{0%{transform:scale(1)}50%{transform:scale(1.12)}100%{transform:scale(1)}}
-        .mcard.wrong-flash{animation:wrongflash .4s}
-        @keyframes wrongflash{0%,100%{background:#fff}25%,75%{background:#ffcdd2}}
-        .mc-emoji{font-size:1.6rem;margin-bottom:2px}
-        .mc-img{width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid #ffa726}
-        .mc-label{font-size:.65rem;font-weight:800;color:#444;text-align:center;line-height:1.2;padding:0 4px}
-        .mc-badge{font-size:.58rem;font-weight:700;padding:2px 6px;border-radius:10px;margin-top:2px;text-align:center}
+{{-- Guest save-to-account banner --}}
+@guest
+<div class="glass rounded-2xl px-4 py-3 mb-3 border border-yellow-300 flex items-center gap-3 flex-wrap">
+    <span class="text-sm font-bold text-yellow-800 flex-1">
+        💾 Нэвтэрснээр ургийн модоо дансандаа хадгалах боломжтой!
+    </span>
+    <div class="flex gap-2">
+        <a href="{{ route('login') }}" class="font-bubblegum text-sm px-4 py-1.5 bg-purple-400 text-white rounded-full no-underline hover:bg-purple-500">🔑 Нэвтрэх</a>
+        <a href="{{ route('register') }}" class="font-bubblegum text-sm px-4 py-1.5 bg-pink-400 text-white rounded-full no-underline hover:bg-pink-500">📝 Бүртгэл</a>
+    </div>
+</div>
+@endguest
 
-        /* timer */
-        .timer-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px}
-        .timer-icon{font-size:1.2rem}
-        .timer-val{font-family:'Bubblegum Sans',cursive;font-size:1.4rem;color:#e65100;min-width:40px;text-align:center}
-        .moves-val{font-size:.88rem;font-weight:800;color:#888}
-
-        /* game screens */
-        .gscreen{text-align:center;padding:20px 10px}
-        .gs-big{font-size:3.5rem;margin-bottom:10px}
-        .gs-title{font-family:'Bubblegum Sans',cursive;font-size:1.6rem;color:#2e7d32;margin-bottom:8px}
-        .gs-msg{font-size:.95rem;color:#555;font-weight:700;margin-bottom:20px}
-        .stars-row{font-size:2rem;letter-spacing:6px;margin-bottom:14px}
-        .gs-btn{font-family:'Bubblegum Sans',cursive;font-size:1.1rem;padding:12px 36px;border:none;border-radius:50px;cursor:pointer;transition:transform .15s;box-shadow:0 4px 0 rgba(0,0,0,.18)}
-        .gs-btn:hover{transform:translateY(-2px)}
-        .gs-btn-start{background:#ffb74d;color:#e65100}
-        .gs-btn-play{background:#66bb6a;color:#1b5e20;margin:0 6px}
-        .gs-btn-tree{background:#ce93d8;color:#4a148c;margin:0 6px}
-
-        /* confetti layer */
-        .confetti-layer{position:absolute;top:0;left:0;right:0;height:1px;pointer-events:none;z-index:60}
-        .conf-piece{position:absolute;width:9px;height:9px;border-radius:2px;animation:cfall linear forwards;opacity:1}
-        @keyframes cfall{to{transform:translateY(500px) rotate(720deg);opacity:0}}
-
-        /* responsive */
-        @media(max-width:480px){
-            .match-grid{grid-template-columns:repeat(3,1fr)}
-            .mcard{min-height:70px}
-            .mc-emoji{font-size:1.3rem}
-            .mc-img{width:36px;height:36px}
-            .nav-btn{font-size:.88rem;padding:8px 16px}
-            .avatar{width:56px;height:56px}
-            .pcard{width:76px}
-        }
-    </style>
-</head>
-<body>
-
-{{-- ── Decorative sky ── --}}
-<div class="sky-deco">
-    <div class="sun-el"></div>
-    <div class="cloud cl1"></div>
-    <div class="cloud cl2"></div>
-    <span class="bird">🐦</span>
+{{-- ── Header card ── --}}
+<div class="glass rounded-3xl shadow-2xl p-5 mb-4">
+    <div class="flex items-end gap-4">
+        <x-deer message="Ургийн модоо харцгаая! 🌳" msgId="deer-msg" size="sm" />
+        <div class="flex-1">
+            <h1 class="font-bubblegum text-3xl text-green-800">🌳 Ургийн Мод</h1>
+            <p class="text-sm font-bold text-gray-500">Гэр бүлийнхнээ таниарай</p>
+        </div>
+    </div>
 </div>
 
-<div class="app">
+{{-- ── Tab nav ── --}}
+<div class="flex gap-2 justify-center my-3 flex-wrap">
+    <button id="nb-tree" onclick="goTab('tree')"
+            class="nb-tree act font-bubblegum text-base px-5 py-2.5 border-0 rounded-full cursor-pointer shadow transition-transform hover:-translate-y-0.5">
+        🌳 Ургийн мод
+    </button>
+    <button id="nb-add" onclick="goTab('add')"
+            class="nb-add font-bubblegum text-base px-5 py-2.5 border-0 rounded-full cursor-pointer shadow transition-transform hover:-translate-y-0.5">
+        ➕ Гишүүн нэмэх
+    </button>
+</div>
 
-    <div style="text-align:center;margin-bottom:12px">
-        <div style="font-family:'Bubblegum Sans',cursive;font-size:2rem;color:#1b5e20;text-shadow:2px 2px 0 rgba(255,255,255,.5)">
-            🌳 {{ $pageTitle ?? 'Миний Ургийн Мод' }} 🌳
-        </div>
-        <div style="font-size:.9rem;font-weight:700;color:#388e3c;margin-top:2px">
-            {{ $pageSubtitle ?? 'Гэр бүлийнхнээ таниарай!' }}
-        </div>
-    </div>
-
-    {{-- ── Navigation tabs ── --}}
-    <div class="nav">
-        <button class="nav-btn nb-tree act" id="nb-tree" onclick="goTab('tree')">🌳 Ургийн мод</button>
-        <button class="nav-btn nb-add" id="nb-add" onclick="goTab('add')">➕ Гишүүн нэмэх</button>
-        <button class="nav-btn nb-game" id="nb-game" onclick="goTab('game')">🎮 Тоглоом</button>
-    </div>
-
-    {{-- ── TREE PANEL ── --}}
-    <div class="panel act" id="p-tree">
-        <div class="tree-box" style="position:relative">
-            <div id="tree-content"></div>
-
-            {{-- Member detail popup --}}
-            <div class="overlay" id="popup-overlay" onclick="closePopup(event)">
-                <div class="popup" onclick="event.stopPropagation()">
-                    <div id="pop-av-area"></div>
-                    <div class="pop-name" id="pop-name"></div>
-                    <div class="pop-rel" id="pop-rel"></div>
-                    <div class="pop-bio" id="pop-bio"></div>
-                    <button class="pop-close" onclick="closePopup()">💛 Хаах</button>
-                </div>
+{{-- ══ TREE PANEL ══ --}}
+<div class="panel act" id="p-tree">
+    <div class="relative glass rounded-3xl p-5 shadow-xl">
+        <div id="tree-content"></div>
+        {{-- Popup overlay --}}
+        <div class="overlay" id="popup-overlay" onclick="closePopup(event)">
+            <div class="popup bg-yellow-50 rounded-3xl p-7 max-w-xs w-[90%] text-center shadow-2xl" onclick="event.stopPropagation()">
+                <div id="pop-av-area"></div>
+                <div class="font-bubblegum text-2xl text-green-800" id="pop-name"></div>
+                <div class="text-sm font-bold text-gray-400 my-1" id="pop-rel"></div>
+                <div class="text-sm text-gray-600 leading-relaxed mb-4" id="pop-bio"></div>
+                @auth
+                <form method="POST" id="pop-delete-form" action="" class="inline">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit"
+                            class="bg-red-300 text-red-900 border-0 rounded-full px-4 py-1.5 font-nunito font-black text-sm cursor-pointer mr-2"
+                            onclick="return confirm('Устгах уу?')">🗑 Устгах</button>
+                </form>
+                @else
+                <button id="pop-delete-local"
+                        class="bg-red-300 text-red-900 border-0 rounded-full px-4 py-1.5 font-nunito font-black text-sm cursor-pointer mr-2"
+                        onclick="deleteLocal()">🗑 Устгах</button>
+                @endauth
+                <button class="bg-pink-400 text-white border-0 rounded-full px-6 py-2 font-nunito font-black text-base cursor-pointer"
+                        onclick="closePopup()">💛 Хаах</button>
             </div>
         </div>
     </div>
+</div>
 
-    {{-- ── ADD MEMBER PANEL ── --}}
-    <div class="panel" id="p-add">
-        <div class="form-box">
-            <div class="form-title">✨ Шинэ гишүүн нэмэх</div>
+{{-- ══ ADD PANEL ══ --}}
+<div class="panel" id="p-add">
+    <div class="glass rounded-3xl p-5 shadow-xl">
+        <h2 class="font-bubblegum text-2xl text-green-800 text-center mb-4">✨ Шинэ гишүүн нэмэх</h2>
 
-            @if(session('success'))
-                <div style="background:#c8e6c9;color:#2e7d32;border-radius:12px;padding:10px 16px;margin-bottom:14px;font-weight:800;text-align:center;">
-                    🎉 {{ session('success') }}
-                </div>
-            @endif
+        {{-- Guest: local-save notice --}}
+        @guest
+        <div class="flex items-center gap-2 bg-yellow-50 border border-yellow-300 rounded-2xl px-4 py-2.5 mb-3 text-sm font-bold text-yellow-800">
+            <span class="text-lg">💾</span>
+            <span>Зочин горимд зөвхөн энэ хөтчид хадгалагдана.
+                <a href="{{ route('login') }}" class="text-purple-600 underline">Нэвтэрснээр</a>
+                дансандаа хадгалагдана.
+            </span>
+        </div>
+        @endguest
+
+        <form id="add-form"
+              method="POST" action="{{ route('family-tree.store') }}"
+              enctype="multipart/form-data"
+              onsubmit="return handleAddSubmit(event)">
+            @csrf
 
             @if($errors->any())
-                <div style="background:#ffcdd2;color:#c62828;border-radius:12px;padding:10px 16px;margin-bottom:14px;font-weight:800;">
+                <div class="bg-red-100 text-red-800 rounded-xl px-4 py-2.5 mb-3 font-black">
                     @foreach($errors->all() as $error)
                         <div>⚠️ {{ $error }}</div>
                     @endforeach
                 </div>
             @endif
 
-            {{-- Optional: use a Laravel form POST instead of JS-only --}}
-            {{-- <form method="POST" action="{{ route('family.store') }}" enctype="multipart/form-data"> --}}
-            {{-- @csrf --}}
-
-            <div class="fg">
-                <label>👤 Нэр</label>
-                <input id="fi-name" type="text" placeholder="Жишээ: Баяр өвөө..."
-                       value="{{ old('name') }}"/>
+            {{-- Name --}}
+            <div class="mb-3">
+                <label class="block font-black text-sm text-gray-600 mb-1">👤 Нэр</label>
+                <input name="name" type="text" placeholder="Жишээ: Баяр өвөө..."
+                       value="{{ old('name') }}"
+                       class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-2xl text-sm outline-none focus:border-green-400 bg-white transition-colors"/>
             </div>
 
-            <div class="fg">
-                <label>👨‍👩‍👧 Хэн бэ?</label>
-                <select id="fi-rel">
+            {{-- Relation --}}
+            <div class="mb-3">
+                <label class="block font-black text-sm text-gray-600 mb-1">👨‍👩‍👧 Хэн бэ?</label>
+                <select name="rel"
+                        class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-2xl text-sm outline-none focus:border-green-400 bg-white transition-colors">
                     <option value="">-- Сонгоно уу --</option>
-                    <option value="gpl" {{ old('rel') == 'gpl' ? 'selected' : '' }}>Өвөө (аавын тал)</option>
-                    <option value="gml" {{ old('rel') == 'gml' ? 'selected' : '' }}>Эмээ (аавын тал)</option>
-                    <option value="gpr" {{ old('rel') == 'gpr' ? 'selected' : '' }}>Өвөө (ээжийн тал)</option>
-                    <option value="gmr" {{ old('rel') == 'gmr' ? 'selected' : '' }}>Эмээ (ээжийн тал)</option>
-                    <option value="dad" {{ old('rel') == 'dad' ? 'selected' : '' }}>Аав</option>
-                    <option value="mom" {{ old('rel') == 'mom' ? 'selected' : '' }}>Ээж</option>
-                    <option value="uncle" {{ old('rel') == 'uncle' ? 'selected' : '' }}>Авга эсвэл нагац ах</option>
-                    <option value="aunt" {{ old('rel') == 'aunt' ? 'selected' : '' }}>Авга эгч эсвэл нагац эгч</option>
-                    <option value="sib" {{ old('rel') == 'sib' ? 'selected' : '' }}>Ах / Эгч / Дүү</option>
-                    <option value="me" {{ old('rel') == 'me' ? 'selected' : '' }}>Би</option>
-                    <option value="cousin" {{ old('rel') == 'cousin' ? 'selected' : '' }}>Үеэл</option>
+                    <option value="gpl" {{ old('rel')=='gpl'?'selected':'' }}>Өвөө (аавын тал)</option>
+                    <option value="gml" {{ old('rel')=='gml'?'selected':'' }}>Эмээ (аавын тал)</option>
+                    <option value="gpr" {{ old('rel')=='gpr'?'selected':'' }}>Өвөө (ээжийн тал)</option>
+                    <option value="gmr" {{ old('rel')=='gmr'?'selected':'' }}>Эмээ (ээжийн тал)</option>
+                    <option value="dad" {{ old('rel')=='dad'?'selected':'' }}>Аав</option>
+                    <option value="mom" {{ old('rel')=='mom'?'selected':'' }}>Ээж</option>
+                    <option value="uncle" {{ old('rel')=='uncle'?'selected':'' }}>Авга/нагац ах</option>
+                    <option value="aunt"  {{ old('rel')=='aunt' ?'selected':'' }}>Авга/нагац эгч</option>
+                    <option value="sib"   {{ old('rel')=='sib'  ?'selected':'' }}>Ах / Эгч / Дүү</option>
+                    <option value="me"    {{ old('rel')=='me'   ?'selected':'' }}>Би</option>
+                    <option value="cousin"{{ old('rel')=='cousin'?'selected':'' }}>Үеэл</option>
                 </select>
             </div>
 
-            <div class="fg">
-                <label>💬 Тэмдэглэл (дуртай зүйл, онцлог)</label>
-                <textarea id="fi-bio" placeholder="Жишээ: Бялуу хийдэг, загас барьдаг...">{{ old('bio') }}</textarea>
+            {{-- Bio --}}
+            <div class="mb-3">
+                <label class="block font-black text-sm text-gray-600 mb-1">💬 Тэмдэглэл</label>
+                <textarea name="bio" placeholder="Жишээ: Бялуу хийдэг, загас барьдаг..."
+                          class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-2xl text-sm outline-none focus:border-green-400 bg-white resize-y min-h-[72px] transition-colors">{{ old('bio') }}</textarea>
             </div>
 
-            <div class="fg">
-                <label>😊 Emoji сонгох</label>
-                <div class="emoji-row" id="emoji-row">
+            {{-- Avatar picker --}}
+            <div class="mb-3">
+                <label class="block font-black text-sm text-gray-600 mb-1">🖼️ Аватар сонгох</label>
+                <div class="flex flex-wrap gap-2 mt-1" id="emoji-row">
                     @php
-                        $emojis = ['👦','👧','👨','👩','👴','👵','🧒','👶','🧓','⭐'];
+                        $avatars = [
+                            'image/jaal_huu.png','image/huurhun_eme.png','image/er_hun.png',
+                            'image/eej.png','image/huurhun_owoo.png','image/emee.png',
+                            'image/nylh_huuhed.png','image/hogshin_aaw.png','image/ah.png','image/egch.png',
+                        ];
                     @endphp
-                    @foreach($emojis as $index => $emoji)
-                        <div class="emo-btn {{ $index === 0 ? 'sel' : '' }}"
-                             data-e="{{ $emoji }}"
-                             onclick="pickEmoji(this)">{{ $emoji }}</div>
+                    @foreach($avatars as $i => $av)
+                        <div class="emo-btn {{ $i===0?'sel':'' }}" data-e="{{ $av }}" onclick="pickEmoji(this)">
+                            <img src="{{ asset($av) }}" style="width:28px;height:28px;border-radius:50%;object-fit:cover" alt=""/>
+                        </div>
                     @endforeach
                 </div>
+                <input type="hidden" name="emoji" id="fi-emoji" value="{{ $avatars[0] }}"/>
             </div>
 
-            <div class="fg">
-                <label>📷 Зураг (заавал биш)</label>
-                <div class="upload-zone" onclick="document.getElementById('fi-photo').click()">
-                    <input type="file" id="fi-photo" accept="image/*" onchange="previewImg(this)"/>
+            {{-- Photo upload --}}
+            <div class="mb-3">
+                <label class="block font-black text-sm text-gray-600 mb-1">📷 Зураг оруулах (заавал биш)</label>
+                <label class="border-2 border-dashed border-green-300 rounded-2xl p-5 text-center cursor-pointer hover:border-green-500 hover:bg-green-50 transition-colors block">
+                    <input type="file" name="photo" accept="image/*" onchange="previewImg(this)" class="hidden"/>
                     <div id="upload-inner">
-                        <div style="font-size:2rem">📸</div>
-                        <div style="font-size:.82rem;color:#888;margin-top:4px">Дарж зураг оруулна уу</div>
+                        <div class="text-4xl">📸</div>
+                        <div class="text-xs text-gray-400 mt-1">Дарж зураг оруулна уу</div>
                     </div>
-                </div>
+                </label>
             </div>
 
-            <button class="add-btn" onclick="addMember()">🌱 Нэмэх!</button>
-
-            {{-- </form> --}}
-        </div>
+            <button type="submit" class="add-btn">🌱 Нэмэх!</button>
+        </form>
     </div>
+</div>
 
-    {{-- ── GAME PANEL ── --}}
-    <div class="panel" id="p-game">
-        <div class="game-box" style="position:relative">
-            <div class="confetti-layer" id="conf-layer"></div>
+@endsection
 
-            {{-- Start screen --}}
-            <div id="gs-start" class="gscreen">
-                <div class="gs-big">🃏</div>
-                <div class="gs-title">Matching Pairs тоглоом!</div>
-                <div class="gs-msg">
-                    Гэр бүлийн гишүүдийн хос картыг олоорой.<br>
-                    Нэр болон зургийг хослуулаарай!
-                </div>
-                <div style="font-size:.85rem;color:#999;margin-bottom:18px">
-                    Тоглохын тулд дор хаяж 2 гишүүн хэрэгтэй!
-                </div>
-                <button class="gs-btn gs-btn-start" onclick="startGame()">🚀 Тоглоом эхлүүлэх!</button>
-            </div>
-
-            {{-- Game board --}}
-            <div id="gs-board" style="display:none">
-                <div class="game-title">🃏 Хосыг ол!</div>
-                <div class="game-sub">Нэр болон нүүрийг хослуулаарай</div>
-                <div class="sbar-wrap">
-                    <div class="sbar-fill" id="sbar" style="width:0%"></div>
-                </div>
-                <div class="sbar-txt" id="sbar-txt">0 / 0 хос олдсон</div>
-                <div class="timer-row">
-                    <span class="timer-icon">⏱️</span>
-                    <span class="timer-val" id="timer-val">0</span>
-                    <span class="moves-val" id="moves-val">0 нүүлт</span>
-                </div>
-                <div class="match-grid" id="match-grid"></div>
-                <div style="text-align:center">
-                    <button class="gs-btn gs-btn-start" onclick="startGame()">🔄 Дахин эхлэх</button>
-                </div>
-            </div>
-
-            {{-- Result screen --}}
-            <div id="gs-result" style="display:none" class="gscreen">
-                <div class="gs-big" id="res-emoji">🏆</div>
-                <div class="stars-row" id="res-stars">⭐⭐⭐</div>
-                <div class="gs-title" id="res-title">Гайхалтай!</div>
-                <div class="gs-msg" id="res-msg"></div>
-                <button class="gs-btn gs-btn-play" onclick="startGame()">🔄 Дахин тоглох</button>
-                <button class="gs-btn gs-btn-tree" onclick="goTab('tree')">🌳 Ургийн мод харах</button>
-            </div>
-        </div>
-    </div>
-
-</div>{{-- /.app --}}
-
+@push('scripts')
 <script>
-    {{-- ── Relationship config ── --}}
     const RELS = {
-        gpl:  { lbl:'Өвөө (аавын тал)',   col:'#ce93d8', gen:0 },
-        gml:  { lbl:'Эмээ (аавын тал)',   col:'#f48fb1', gen:0 },
-        gpr:  { lbl:'Өвөө (ээжийн тал)',  col:'#ce93d8', gen:0 },
-        gmr:  { lbl:'Эмээ (ээжийн тал)',  col:'#f48fb1', gen:0 },
-        dad:  { lbl:'Аав',                 col:'#90caf9', gen:1 },
-        mom:  { lbl:'Ээж',                 col:'#f48fb1', gen:1 },
-        uncle:{ lbl:'Авга/нагац ах',       col:'#ffcc80', gen:1 },
-        aunt: { lbl:'Авга/нагац эгч',      col:'#f48fb1', gen:1 },
-        sib:  { lbl:'Ах/Эгч/Дүү',         col:'#a5d6a7', gen:2 },
-        me:   { lbl:'Би',                  col:'#ffd600', gen:2 },
-        cousin:{ lbl:'Үеэл',              col:'#ffb74d', gen:2 }
+        gpl:  { lbl:'Өвөө (аавын тал)',  col:'#ce93d8', gen:0 },
+        gml:  { lbl:'Эмээ (аавын тал)',  col:'#f48fb1', gen:0 },
+        gpr:  { lbl:'Өвөө (ээжийн тал)', col:'#ce93d8', gen:0 },
+        gmr:  { lbl:'Эмээ (ээжийн тал)', col:'#f48fb1', gen:0 },
+        dad:  { lbl:'Аав',               col:'#90caf9', gen:1 },
+        mom:  { lbl:'Ээж',               col:'#f48fb1', gen:1 },
+        uncle:{ lbl:'Авга/нагац ах',     col:'#ffcc80', gen:1 },
+        aunt: { lbl:'Авга/нагац эгч',    col:'#f48fb1', gen:1 },
+        sib:  { lbl:'Ах/Эгч/Дүү',       col:'#a5d6a7', gen:2 },
+        me:   { lbl:'Би',                col:'#ffd600', gen:2 },
+        cousin:{lbl:'Үеэл',              col:'#ffb74d', gen:2 },
     };
 
-    {{-- ── Seed data (server-side via Blade or fallback defaults) ── --}}
-    @if(isset($members) && count($members))
-        const SERVER_MEMBERS = {!! json_encode($members) !!};
+    const IS_AUTH = {{ auth()->check() ? 'true' : 'false' }};
+
+    // Server members (logged-in) or localStorage fallback
+    @if(auth()->check() && $members->count())
+        const SERVER_MEMBERS = {!! $members->map(fn($m) => [
+            'id'    => $m->id,
+            'name'  => $m->name,
+            'rel'   => $m->rel,
+            'emoji' => $m->emoji,
+            'photo' => $m->photo ? asset('storage/' . $m->photo) : null,
+            'bio'   => $m->bio,
+        ])->values()->toJson() !!};
     @else
         const SERVER_MEMBERS = null;
     @endif
 
     const DEFAULTS = [
-        { id:1, name:'Баяр өвөө',   rel:'gpl', emoji:'👴', bio:'Загас барьдаг, шатар тоглодог',         photo:null },
-        { id:2, name:'Сувд эмээ',   rel:'gml', emoji:'👵', bio:'Цагааны боов хийдэг гайхалтай',          photo:null },
-        { id:3, name:'Болд аав',    rel:'dad', emoji:'👨', bio:'Машин жолоодно, хөгжим тоглодог',        photo:null },
-        { id:4, name:'Номун ээж',   rel:'mom', emoji:'👩', bio:'Дуулдаг, цэцэг тарьдаг',                 photo:null },
-        { id:5, name:'Би',          rel:'me',  emoji:'⭐', bio:'Энэ бол МИНИЙ ургийн мод!',               photo:null },
-        { id:6, name:'Эрдэнэ дүү',  rel:'sib', emoji:'🧒', bio:'Хамгийн хурдан гүйдэг',                  photo:null },
+        { id:1, name:'Баяр өвөө',  rel:'gpl', emoji:'image/huurhun_owoo.png', bio:'Загас барьдаг',       photo:null },
+        { id:2, name:'Сувд эмээ',  rel:'gml', emoji:'image/emee.png',          bio:'Боов хийдэг гайхалтай',photo:null },
+        { id:3, name:'Болд аав',   rel:'dad', emoji:'image/aaw.png',           bio:'Машин жолоодно',      photo:null },
+        { id:4, name:'Номун ээж',  rel:'mom', emoji:'image/eej.png',           bio:'Дуулдаг',             photo:null },
+        { id:5, name:'Би',         rel:'me',  emoji:'image/unaach.png',        bio:'Миний ургийн мод!',   photo:null },
+        { id:6, name:'Эрдэнэ дүү', rel:'sib', emoji:'image/eregtei_duu.png',   bio:'Хурдан гүйдэг',      photo:null },
     ];
 
-    let members, nxtId, selEmoji = '👦', photoData = null;
-    let gameState = { cards:[], flipped:[], matched:[], moves:0, timer:0, timerInt:null };
+    let members, selEmoji = 'image/jaal_huu.png', photoData = null, currentPopupId = null;
+    function isImgPath(e) { return e && (e.startsWith('image/') || e.startsWith('/') || e.startsWith('data:') || e.startsWith('http')); }
 
-    function load() {
-        try {
-            members = SERVER_MEMBERS
-                || JSON.parse(localStorage.getItem('fm_members') || 'null')
-                || JSON.parse(JSON.stringify(DEFAULTS));
-        } catch(e) {
-            members = JSON.parse(JSON.stringify(DEFAULTS));
+    function loadMembers() {
+        if (SERVER_MEMBERS) {
+            members = SERVER_MEMBERS;
+        } else {
+            try {
+                members = JSON.parse(localStorage.getItem('fm_members') || 'null') || JSON.parse(JSON.stringify(DEFAULTS));
+            } catch(e) { members = JSON.parse(JSON.stringify(DEFAULTS)); }
         }
-        nxtId = Math.max(...members.map(m => m.id), 0) + 1;
     }
 
-    function save() {
-        try { localStorage.setItem('fm_members', JSON.stringify(members)); } catch(e) {}
+    function darken(h) {
+        let r=parseInt(h.slice(1,3),16), g=parseInt(h.slice(3,5),16), b=parseInt(h.slice(5,7),16);
+        return `rgb(${Math.max(0,r-70)},${Math.max(0,g-70)},${Math.max(0,b-70)})`;
     }
 
-    load();
-
-    {{-- ── Tab navigation ── --}}
+    // ── Tab navigation ──
     function goTab(t) {
-        ['tree','add','game'].forEach(x => {
-            document.getElementById('p-' + x).classList.toggle('act', x === t);
-            document.getElementById('nb-' + x).classList.toggle('act', x === t);
+        ['tree','add'].forEach(x => {
+            const p = document.getElementById('p-' + x);
+            const b = document.getElementById('nb-' + x);
+            if (p) p.classList.toggle('act', x === t);
+            if (b) b.classList.toggle('act', x === t);
         });
+        const msg = document.getElementById('deer-msg');
+        if (msg) {
+            msg.textContent = t === 'add'
+                ? 'Шинэ гишүүн нэмцгээе! ➕'
+                : 'Ургийн модоо харцгаая! 🌳';
+        }
         if (t === 'tree') renderTree();
     }
 
-    {{-- ── TREE ── --}}
+    // ── Tree rendering ──
     function renderTree() {
         const tc = document.getElementById('tree-content');
-        if (!members.length) {
-            tc.innerHTML = '<div class="empty-tree"><div class="big">🌱</div><p>Гишүүн байхгүй байна.<br>"Гишүүн нэмэх" таб руу очоорой!</p></div>';
+        if (!members || !members.length) {
+            tc.innerHTML = '<div class="empty-tree"><div class="big">🌱</div><p>Гишүүн байхгүй байна.<br>"Гишүүн нэмэх" дарж нэмнэ үү!</p></div>';
             return;
         }
         const gens = [
-            { lbl:'👴👵 Өвөө эмээ нар',    keys:['gpl','gml','gpr','gmr'] },
-            { lbl:'👨👩 Эцэг эхчүүд',      keys:['dad','mom','uncle','aunt'] },
-            { lbl:'👦👧 Бид нар',           keys:['me','sib','cousin'] },
+            { lbl:'👴👵 Өвөө эмээ нар', keys:['gpl','gml','gpr','gmr'] },
+            { lbl:'👨👩 Эцэг эхчүүд',   keys:['dad','mom','uncle','aunt'] },
+            { lbl:'👦👧 Бид нар',        keys:['me','sib','cousin'] },
         ];
         let h = '';
+        let prevHad = false;
         gens.forEach((g, gi) => {
             const gm = members.filter(m => g.keys.includes(m.rel));
             if (!gm.length) return;
-            h += `<div class="gen-label">${g.lbl}</div><div class="gen-row">`;
+            if (prevHad) h += '<div class="tree-connector"></div>';
+            h += `<div class="gen-section mb-2">
+                <div class="gen-label">${g.lbl}</div>
+                <div class="gen-row">`;
             gm.forEach(m => {
                 const r = RELS[m.rel] || {};
                 const isMe = m.rel === 'me';
-                h += `<div class="pcard" onclick="showPopup(${m.id})" style="${isMe ? 'transform:scale(1.08)' : ''}">
-                    <div class="avatar" style="border-color:${r.col || '#ccc'}${isMe ? ';box-shadow:0 0 0 4px ' + r.col + '55' : ''}">
-                        ${m.photo ? `<img src="${m.photo}" alt="${m.name}"/>` : `<span style="font-size:2rem">${m.emoji}</span>`}
+                const avatar = m.photo
+                    ? `<img src="${m.photo}" alt="${m.name}"/>`
+                    : isImgPath(m.emoji)
+                        ? `<img src="${m.emoji}" alt="${m.name}" style="width:100%;height:100%;object-fit:cover"/>`
+                        : `<span style="font-size:2rem">${m.emoji}</span>`;
+                h += `<div class="pcard" onclick="showPopup(${m.id})" style="${isMe?'transform:scale(1.08)':''}">
+                    <div class="avatar" style="border-color:${r.col||'#ccc'}${isMe?';box-shadow:0 0 0 4px '+r.col+'55':''}">
+                        ${avatar}
                     </div>
                     <div class="pname">${m.name}</div>
-                    <div class="prelabel" style="background:${r.col || '#eee'}22;color:${darken(r.col || '#888')}">${r.lbl || m.rel}</div>
+                    <div class="prelabel" style="background:${r.col||'#eee'}22;color:${darken(r.col||'#888')}">${r.lbl||m.rel}</div>
                 </div>`;
             });
-            h += '</div>';
-            if (gi < gens.length - 1) h += '<div class="arr">↕️</div>';
+            h += '</div></div>';
+            prevHad = true;
         });
         tc.innerHTML = h;
     }
 
-    function darken(h) {
-        let r = parseInt(h.slice(1,3),16),
-            g = parseInt(h.slice(3,5),16),
-            b = parseInt(h.slice(5,7),16);
-        return `rgb(${Math.max(0,r-70)},${Math.max(0,g-70)},${Math.max(0,b-70)})`;
+    // ── Local delete (guest) ──
+    function deleteLocal() {
+        if (!confirm('Устгах уу?')) return;
+        members = members.filter(m => m.id !== currentPopupId);
+        try { localStorage.setItem('fm_members', JSON.stringify(members)); } catch(e) {}
+        closePopup(); renderTree();
     }
 
+    // ── Popup ──
     function showPopup(id) {
-        const m = members.find(x => x.id === id);
-        if (!m) return;
+        currentPopupId = id;
+        const m = members.find(x => x.id === id); if (!m) return;
         const r = RELS[m.rel] || {};
-        document.getElementById('pop-name').innerHTML =
-            `<span style="font-family:'Bubblegum Sans',cursive;font-size:1.5rem;color:#2e7d32">${m.name}</span>`;
-        document.getElementById('pop-rel').textContent = (r.lbl || m.rel) + (m.rel === 'me' ? ' ⭐' : '');
-        document.getElementById('pop-bio').textContent = m.bio || '';
-        const aa = document.getElementById('pop-av-area');
-        aa.innerHTML = m.photo
+        document.getElementById('pop-name').textContent = m.name;
+        document.getElementById('pop-rel').textContent  = (r.lbl||m.rel) + (m.rel==='me'?' ⭐':'');
+        document.getElementById('pop-bio').textContent  = m.bio || '';
+        document.getElementById('pop-av-area').innerHTML = m.photo
             ? `<img class="pop-img" src="${m.photo}" alt="${m.name}"/>`
-            : `<div class="pop-av" style="font-size:3.2rem">${m.emoji}</div>`;
+            : isImgPath(m.emoji)
+                ? `<img class="pop-img" src="${m.emoji}" alt="${m.name}"/>`
+                : `<div class="pop-av">${m.emoji}</div>`;
+        const delForm = document.getElementById('pop-delete-form');
+        if (delForm) delForm.action = `/family-tree/${id}`;
         document.getElementById('popup-overlay').classList.add('show');
     }
-
     function closePopup(e) {
         if (!e || e.target === document.getElementById('popup-overlay'))
             document.getElementById('popup-overlay').classList.remove('show');
     }
 
-    {{-- ── ADD ── --}}
+    // ── Avatar picker ──
     function pickEmoji(el) {
         document.querySelectorAll('.emo-btn').forEach(e => e.classList.remove('sel'));
         el.classList.add('sel');
         selEmoji = el.dataset.e;
+        const input = document.getElementById('fi-emoji');
+        if (input) input.value = el.dataset.e;
     }
 
+    // ── Photo preview (stores base64 for guest use) ──
     function previewImg(inp) {
-        const f = inp.files[0];
-        if (!f) return;
-        const r = new FileReader();
-        r.onload = e => {
-            photoData = e.target.result;
+        const f = inp.files[0]; if (!f) return;
+        if (!IS_AUTH) {
+            // Read as base64 for localStorage storage
+            const reader = new FileReader();
+            reader.onload = ev => {
+                photoData = ev.target.result;
+                document.getElementById('upload-inner').innerHTML =
+                    `<img class="prev-img" src="${photoData}"/>
+                     <div class="text-xs text-green-600 mt-1 font-black text-center">✓ Бэлэн!</div>`;
+            };
+            reader.readAsDataURL(f);
+        } else {
             document.getElementById('upload-inner').innerHTML =
-                `<img class="prev-img" src="${photoData}"/><div style="font-size:.8rem;color:#66bb6a;margin-top:5px;font-weight:800">✓ Бэлэн!</div>`;
-        };
-        r.readAsDataURL(f);
+                `<img class="prev-img" src="${URL.createObjectURL(f)}"/>
+                 <div class="text-xs text-green-600 mt-1 font-black text-center">✓ Бэлэн!</div>`;
+        }
     }
 
-    function addMember() {
-        const name = document.getElementById('fi-name').value.trim();
-        const rel  = document.getElementById('fi-rel').value;
-        const bio  = document.getElementById('fi-bio').value.trim();
+    // ── Guest: save to localStorage and re-render ──
+    function handleAddSubmit(e) {
+        if (IS_AUTH) return true; // Let the form POST to server normally
+
+        e.preventDefault();
+        const name = document.querySelector('[name="name"]').value.trim();
+        const rel  = document.querySelector('[name="rel"]').value;
+        const bio  = document.querySelector('[name="bio"]').value.trim();
         const btn  = document.querySelector('.add-btn');
 
         if (!name || !rel) {
             btn.textContent = '⚠️ Нэр болон харилцааг оруулна уу!';
             btn.style.background = '#ef5350';
             setTimeout(() => { btn.textContent = '🌱 Нэмэх!'; btn.style.background = ''; }, 1800);
-            return;
+            return false;
         }
 
-        members.push({ id: nxtId++, name, rel, emoji: selEmoji, bio: bio || 'Гэр бүлийн гишүүн', photo: photoData });
-        save();
+        const nxtId = Math.max(...members.map(m => m.id), 0) + 1;
+        members.push({ id: nxtId, name, rel, emoji: selEmoji, bio: bio || 'Гэр бүлийн гишүүн', photo: photoData });
 
-        btn.textContent = '🎉 Нэмэгдлээ!';
-        btn.style.background = '#ff9800';
-        setTimeout(() => { btn.textContent = '🌱 Нэмэх!'; btn.style.background = ''; }, 1400);
+        try { localStorage.setItem('fm_members', JSON.stringify(members)); } catch(ex) {}
 
-        document.getElementById('fi-name').value = '';
-        document.getElementById('fi-bio').value  = '';
-        document.getElementById('fi-rel').value  = '';
+        // Reset form
+        document.querySelector('[name="name"]').value = '';
+        document.querySelector('[name="rel"]').value  = '';
+        document.querySelector('[name="bio"]').value  = '';
         photoData = null;
+        selEmoji  = 'image/jaal_huu.png';
+        document.querySelectorAll('.emo-btn').forEach((b, i) => b.classList.toggle('sel', i === 0));
+        document.getElementById('fi-emoji').value = selEmoji;
         document.getElementById('upload-inner').innerHTML =
-            `<div style="font-size:2rem">📸</div><div style="font-size:.82rem;color:#888;margin-top:4px">Дарж зураг оруулна уу</div>`;
+            `<div class="text-4xl">📸</div><div class="text-xs text-gray-400 mt-1">Дарж зураг оруулна уу</div>`;
 
+        btn.textContent = '🎉 Нэмэгдлээ!'; btn.style.background = '#ff9800';
+        setTimeout(() => { btn.textContent = '🌱 Нэмэх!'; btn.style.background = ''; }, 1400);
         setTimeout(() => goTab('tree'), 600);
+        return false;
     }
 
-    {{-- ── GAME ── --}}
-    function startGame() {
-        if (members.length < 2) { alert('Дор хаяж 2 гишүүн хэрэгтэй!'); return; }
-        clearInterval(gameState.timerInt);
-
-        const pool = members.slice(0, Math.min(8, members.length));
-        const pairs = [];
-        pool.forEach(m => {
-            const r = RELS[m.rel] || {};
-            pairs.push({ id:m.id,      type:'face', emoji:m.emoji, photo:m.photo, name:m.name, relLbl:r.lbl||m.rel, relCol:r.col||'#ccc', pairKey:m.id });
-            pairs.push({ id:m.id+'n',  type:'name',                               name:m.name, relLbl:r.lbl||m.rel, relCol:r.col||'#ccc', pairKey:m.id });
-        });
-
-        const shuffled = pairs.sort(() => Math.random() - .5);
-        gameState = {
-            cards:    shuffled.map((c,i) => ({...c, idx:i, flipped:false, matched:false})),
-            flipped:  [],
-            matched:  [],
-            moves:    0,
-            timer:    0,
-            timerInt: null
-        };
-        gameState.timerInt = setInterval(() => {
-            gameState.timer++;
-            const tv = document.getElementById('timer-val');
-            if (tv) tv.textContent = gameState.timer;
-        }, 1000);
-
-        document.getElementById('gs-start').style.display  = 'none';
-        document.getElementById('gs-result').style.display = 'none';
-        document.getElementById('gs-board').style.display  = 'block';
-        updateScore();
-        renderBoard();
-    }
-
-    function renderBoard() {
-        const grid = document.getElementById('match-grid');
-        grid.style.gridTemplateColumns = `repeat(4,1fr)`;
-        grid.innerHTML = '';
-        gameState.cards.forEach(c => {
-            const div = document.createElement('div');
-            div.className = 'mcard' + (c.matched ? ' matched' : c.flipped ? ' flipped' : ' face-down');
-            div.id = 'mc-' + c.idx;
-            if (c.flipped || c.matched) {
-                let inner = '';
-                if (c.type === 'face') {
-                    inner += c.photo
-                        ? `<img class="mc-img" src="${c.photo}" alt="${c.name}"/>`
-                        : `<div class="mc-emoji">${c.emoji}</div>`;
-                }
-                inner += `<div class="mc-label">${c.name}</div>`;
-                inner += `<div class="mc-badge" style="background:${c.relCol}22;color:${darken(c.relCol)}">${c.relLbl}</div>`;
-                if (c.type === 'name') {
-                    inner = `<div style="font-size:.82rem;font-weight:900;color:#444;padding:4px;text-align:center;line-height:1.3">${c.name}</div>`
-                          + `<div class="mc-badge" style="background:${c.relCol}22;color:${darken(c.relCol)}">${c.relLbl}</div>`;
-                }
-                div.innerHTML = `<div class="mcard-inner">${inner}</div>`;
-            }
-            if (!c.matched) div.onclick = () => flipCard(c.idx);
-            grid.appendChild(div);
-        });
-    }
-
-    function flipCard(idx) {
-        const gs = gameState;
-        if (gs.flipped.length >= 2) return;
-        const card = gs.cards[idx];
-        if (card.flipped || card.matched) return;
-        card.flipped = true;
-        gs.flipped.push(idx);
-        renderBoard();
-        if (gs.flipped.length === 2) {
-            gs.moves++;
-            document.getElementById('moves-val').textContent = gs.moves + ' нүүлт';
-            const [a, b] = gs.flipped.map(i => gs.cards[i]);
-            if (a.pairKey === b.pairKey && a.type !== b.type) {
-                gs.cards[gs.flipped[0]].matched = true;
-                gs.cards[gs.flipped[1]].matched = true;
-                gs.matched.push(a.pairKey);
-                gs.flipped = [];
-                updateScore();
-                renderBoard();
-                celebrate();
-                if (gs.matched.length === gs.cards.length / 2) {
-                    clearInterval(gs.timerInt);
-                    setTimeout(showResult, 600);
-                }
-            } else {
-                setTimeout(() => {
-                    const els = gs.flipped.map(i => document.getElementById('mc-' + i));
-                    els.forEach(el => { if (el) el.classList.add('wrong-flash'); });
-                    setTimeout(() => {
-                        gs.flipped.forEach(i => gs.cards[i].flipped = false);
-                        gs.flipped = [];
-                        renderBoard();
-                    }, 500);
-                }, 700);
-            }
-        }
-    }
-
-    function updateScore() {
-        const total = gameState.cards.length / 2;
-        const found = gameState.matched.length;
-        const pct   = total ? Math.round(found / total * 100) : 0;
-        const sb = document.getElementById('sbar');    if (sb) sb.style.width = pct + '%';
-        const st = document.getElementById('sbar-txt'); if (st) st.textContent = found + ' / ' + total + ' хос олдсон';
-    }
-
-    function showResult() {
-        document.getElementById('gs-board').style.display  = 'none';
-        document.getElementById('gs-result').style.display = 'block';
-        const mv = gameState.moves;
-        const t  = gameState.timer;
-        const total = gameState.cards.length / 2;
-        const ratio = mv / total;
-        let stars, emoji, title, msg;
-        if (ratio <= 1.8)     { stars='⭐⭐⭐'; emoji='🏆'; title='Аварга байна!';    msg=`${mv} нүүлт, ${t} секундэд бүгдийг олов!`; }
-        else if (ratio <= 3)  { stars='⭐⭐';   emoji='😊'; title='Маш сайн!';        msg=`${mv} нүүлт, ${t} секундэд дуусгалаа!`; }
-        else                  { stars='⭐';     emoji='💪'; title='Баяр хүргэе!';     msg=`${mv} нүүлт хийлээ. Дараа илүү хурдан болно!`; }
-        document.getElementById('res-stars').textContent = stars;
-        document.getElementById('res-emoji').textContent = emoji;
-        document.getElementById('res-title').textContent = title;
-        document.getElementById('res-msg').textContent   = msg;
-        bigCelebrate();
-    }
-
-    function celebrate() {
-        const layer  = document.getElementById('conf-layer');
-        const colors = ['#f48fb1','#ffb74d','#a5d6a7','#90caf9','#ce93d8','#ffd600'];
-        for (let i = 0; i < 8; i++) {
-            const c = document.createElement('div');
-            c.className = 'conf-piece';
-            c.style.cssText = `left:${10 + Math.random() * 80}%;background:${colors[Math.floor(Math.random() * colors.length)]};width:${6 + Math.random() * 6}px;height:${6 + Math.random() * 6}px;border-radius:${Math.random() > .5 ? '50%' : '2px'};animation-duration:${1 + Math.random()}s;animation-delay:${Math.random() * .3}s`;
-            layer.appendChild(c);
-            setTimeout(() => c.remove(), 1500);
-        }
-    }
-
-    function bigCelebrate() {
-        for (let i = 0; i < 5; i++) setTimeout(celebrate, i * 200);
-    }
-
+    // ── Init ──
+    loadMembers();
     renderTree();
-</script>
 
-</body>
-</html>
+    // Handle ?tab=add from dashboard or direct link
+    const urlTab = new URLSearchParams(window.location.search).get('tab');
+    if (urlTab === 'add') goTab('add');
+
+    // Handle localStorage redirect from other pages
+    const gotoTab = localStorage.getItem('fm_goto');
+    if (gotoTab === 'add') { localStorage.removeItem('fm_goto'); goTab('add'); }
+</script>
+@endpush
