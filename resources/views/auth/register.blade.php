@@ -1,7 +1,21 @@
 <x-guest-layout>
     <form method="POST" action="{{ route('register') }}">
         @csrf
+        <div class="glass rounded-3xl shadow-2xl p-5 mb-4">
+    <div class="flex items-end gap-4">
+        
 
+    <ul>
+        <li>Яагаад нэвтрэх хэрэгтэй вэ?</li>
+        <li> Гэр бүлийнхээ мэдээллийг хадгалах боломжтой болно</li>
+        <li> Хэдэн хором л болно</li>
+
+    </ul>
+        <div class="flex-1">
+        
+        </div>
+    </div>
+</div>
         <!-- Name -->
         <div>
             <x-input-label for="name" :value="__('Name')" />
@@ -28,6 +42,8 @@
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
 
+        
+
         <!-- Confirm Password -->
         <div class="mt-4">
             <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
@@ -38,6 +54,8 @@
 
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
         </div>
+
+        
 
         <div class="flex items-center justify-end mt-4">
             <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('login') }}">

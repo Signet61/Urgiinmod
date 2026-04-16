@@ -12,6 +12,7 @@ Route::get('/', fn() => view('welcome'))->name('home');
 Route::get('/family-tree', [FamilyTreeController::class, 'index'])->name('family-tree');
 Route::middleware('auth')->group(function () {
     Route::post('/family-tree', [FamilyTreeController::class, 'store'])->name('family-tree.store');
+    Route::patch('/family-tree/{familyMember}', [FamilyTreeController::class, 'update'])->name('family-tree.update');
     Route::delete('/family-tree/{familyMember}', [FamilyTreeController::class, 'destroy'])->name('family-tree.destroy');
 });
 

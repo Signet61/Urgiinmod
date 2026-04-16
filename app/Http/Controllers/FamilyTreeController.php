@@ -40,7 +40,48 @@ class FamilyTreeController extends Controller
             'photo' => $photoPath,
         ]);
 
-        return redirect()->route('family-tree')->with('success', $request->name . ' нэмэгдлээ!');
+        return redirect()->route('family-tree')->with('success', $request->name . ' нэмэгдлээ! 🎉');
+    }
+
+    public function update(Request $request, FamilyMember $familyMember)
+    {
+        abort_if($familyMember->user_id !== auth()->id(), 403);
+
+        $request->validate([
+            'name'  => 'required|string|max:100',
+            'rel'   => 'required|string|in:gpl,gml,gpr,gmr,dad,mom,uncle,aunt,sib,me,cousin',
+            'emoji' => 'nullable|string',
+            'bio'   => 'nullable|string|max:300',
+            'photo' => 'nullable|image|max:2048',
+        ]);
+
+        $data = [
+            'name'  => $request->name,
+            'rel'   => $request->rel,
+            'emoji' => $request->input('emoji') ?: $familyMember->emoji,
+            'bio'   => $request->bio,
+        ];
+
+        if ($request->hasFile('photo')) {
+            if ($familyMember->photo) {
+                Storage::disk('public')->delete($familyMember->photo);
+            }
+            $data['photo'] = $request->file('photo')->store('family-photos', 'public');
+        }
+
+        $familyMember->update($data);
+        $familyMember->refresh();
+
+        return response()->json([
+            'member' => [
+                'id'    => $familyMember->id,
+                'name'  => $familyMember->name,
+                'rel'   => $familyMember->rel,
+                'emoji' => $familyMember->emoji,
+                'photo' => $familyMember->photo ? asset('storage/' . $familyMember->photo) : null,
+                'bio'   => $familyMember->bio,
+            ],
+        ]);
     }
 
     public function destroy(FamilyMember $familyMember)
