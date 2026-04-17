@@ -50,7 +50,9 @@
         ])->values()->toArray()
         : [];
 
-    $initialMembersData = count($serverMembersData) ? $serverMembersData : $defaultMembers;
+    $initialMembersData = auth()->check()
+        ? $serverMembersData
+        : (count($serverMembersData) ? $serverMembersData : $defaultMembers);
 @endphp
 
 @section('content')

@@ -97,6 +97,49 @@
         return document.getElementById('fi-related-to-id');
     }
 
+    function setSelectedEmoji(emojiPath) {
+        const nextEmoji = emojiPath || 'image/jaal_huu.png';
+        selEmoji = nextEmoji;
+
+        const emojiInput = document.getElementById('fi-emoji');
+        if (emojiInput) {
+            emojiInput.value = nextEmoji;
+        }
+
+        document.querySelectorAll('#emoji-row button').forEach((item) => {
+            const isSelected = item.dataset.e === nextEmoji;
+            item.classList.toggle('border-green-500', isSelected);
+            item.classList.toggle('bg-green-100', isSelected);
+            item.classList.toggle('border-transparent', !isSelected);
+            item.classList.toggle('bg-gray-100', !isSelected);
+        });
+    }
+
+    function syncAuthDeleteFormState(memberId) {
+        const deleteForm = document.getElementById('side-delete-form');
+        if (!deleteForm) {
+            return;
+        }
+
+        const deleteButton = deleteForm.querySelector('button[type="submit"]');
+        const normalizedId = toId(memberId);
+
+        if (!normalizedId) {
+            deleteForm.action = '';
+            if (deleteButton) {
+                deleteButton.disabled = true;
+                deleteButton.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+            return;
+        }
+
+        deleteForm.action = '/family-tree/' + normalizedId;
+        if (deleteButton) {
+            deleteButton.disabled = false;
+            deleteButton.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    }
+
     function findPartnerFor(memberId) {
         const ownerId = toId(memberId);
         if (!ownerId) {
@@ -199,10 +242,7 @@
         document.getElementById('sel-bio-meta').textContent = member.bio || '-';
         document.getElementById('sel-av-area').innerHTML = getAvatarHtml(member);
 
-        const deleteForm = document.getElementById('side-delete-form');
-        if (deleteForm) {
-            deleteForm.action = '/family-tree/' + id;
-        }
+        syncAuthDeleteFormState(member.id);
 
         const msg = document.getElementById('deer-msg');
         if (msg) {
@@ -668,8 +708,8 @@
         renderTree();
     }
 
-    function zoomIn() { setZoom(treeZoom + 0.1); }
-    function zoomOut() { setZoom(treeZoom - 0.1); }
+    function zoomIn() { setZoom(treeZoom + 0.2); }
+    function zoomOut() { setZoom(treeZoom - 0.2); }
     function zoomReset() {
         hasAutoCentered = false;
         setZoom(1);
@@ -783,6 +823,8 @@
 
     function setFormModeCreate() {
         editingMemberId = null;
+        photoData = null;
+        setSelectedEmoji('image/jaal_huu.png');
         const form = document.getElementById('add-form');
         if (!form) {
             return;
@@ -860,6 +902,8 @@
         }
 
         setFormModeEdit(member.id);
+        photoData = null;
+        setSelectedEmoji(member.emoji || 'image/jaal_huu.png');
         document.querySelector('[name="name"]').value = member.name || '';
         document.querySelector('[name="rel"]').value = member.rel || '';
         document.querySelector('[name="bio"]').value = member.bio || '';
@@ -1194,8 +1238,17 @@
             editing.rel = rel;
             editing.related_to_id = relatedToId;
             editing.bio = bio || 'Гэр бүлийн гишүүн';
-            editing.emoji = selEmoji;
-            editing.photo = photoData || editing.photo || null;
+            const selectedEmoji = document.getElementById('fi-emoji')?.value || selEmoji;
+            const previousEmoji = editing.emoji;
+            const hadPhoto = !!editing.photo;
+
+            editing.emoji = selectedEmoji;
+
+            if (photoData) {
+                editing.photo = photoData;
+            } else if (hadPhoto && previousEmoji !== selectedEmoji) {
+                editing.photo = null;
+            }
 
             try {
                 localStorage.setItem('fm_members', JSON.stringify(members));
@@ -1283,6 +1336,7 @@
         const startMember = members.find((item) => item.rel === 'me') || members[0];
         setSelectedMember(startMember.id);
     } else {
+        syncAuthDeleteFormState(null);
         renderTree();
     }
 
@@ -1290,4 +1344,3 @@
         openAddModal();
     }
 })();
-
