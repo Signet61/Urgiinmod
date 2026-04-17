@@ -1,4 +1,4 @@
-@extends('layouts.main')
+﻿@extends('layouts.main')
 @section('title', 'Тоглоом - Ургийн Мод')
 
 @push('styles')
@@ -232,34 +232,33 @@
         </div>
 
         <div id="quiz-start" class="rounded-[1.75rem] bg-white/80 p-5 shadow-sm">
-            <div class="grid gap-4 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+            <div class="grid gap-4">
                 <div>
                     <div class="text-xs font-black uppercase tracking-[0.18em] text-gray-400">Эхэлцгээе</div>
                     <h3 class="mt-2 font-bubblegum text-3xl text-orange-800">Хэн бэ? Ямар хамаатан бэ?</h3>
                     <p class="mt-3 text-sm font-bold text-gray-600">
-                       Хурдан зөв хариулах тусам өнөө өснө шүү.
+                       Хурдан зөв хариулах тусам оноо өснө шүү
                     </p>
                     <button type="button" onclick="startQuiz()" class="mt-5 rounded-full bg-orange-400 px-8 py-3 font-bubblegum text-lg text-white shadow-[0_6px_0_#c2410c] transition hover:-translate-y-0.5 hover:bg-orange-300">
                         Эхлүүлэх
                     </button>
-                </div>
-                <div class="grid grid-cols-3 gap-3">
-                    <div class="rounded-2xl bg-orange-50 p-4 text-center">
-                        <div class="text-xs font-black text-orange-500">Асуулт</div>
-                        <div id="start-question-count" class="mt-2 font-bubblegum text-3xl text-orange-800">0</div>
-                    </div>
-                    <div class="rounded-2xl bg-pink-50 p-4 text-center">
-                        <div class="text-xs font-black text-pink-500">Timer</div>
-                        <div class="mt-2 font-bubblegum text-3xl text-pink-700">12с</div>
-                    </div>
-                    <div class="rounded-2xl bg-green-50 p-4 text-center">
-                        <div class="text-xs font-black text-green-500">Rule</div>
-                        <div class="mt-2 font-bubblegum text-3xl text-green-700">4x</div>
+                    <div class="mt-5 grid gap-3 sm:grid-cols-3">
+                        <div class="rounded-2xl bg-orange-50 p-4 text-center">
+                            <div class="text-xs font-black text-orange-500">Асуулт</div>
+                            <div id="start-question-count" class="mt-2 font-bubblegum text-3xl text-orange-800">0</div>
+                        </div>
+                        <div class="rounded-2xl bg-pink-50 p-4 text-center">
+                            <div class="text-xs font-black text-pink-500">Timer</div>
+                            <div class="mt-2 font-bubblegum text-3xl text-pink-700">12сек</div>
+                        </div>
+                        <div class="rounded-2xl bg-green-50 p-4 text-center">
+                            <div class="text-xs font-black text-green-500">Rule</div>
+                            <div class="mt-2 font-bubblegum text-3xl text-green-700">4 сонголт</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-
         <div id="quiz-board" class="hidden space-y-4">
             <div class="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
                 <div class="rounded-[1.75rem] bg-white/80 p-4 shadow-sm">
@@ -477,12 +476,12 @@
     @endif
 
     const DEFAULTS = [
-        { id: 1, name: 'Баяр өвөө', rel: 'gpl', emoji: 'image/huurhun_owoo.png', photo: null, bio: 'Загас барих дуртай.' },
-        { id: 2, name: 'Сувд эмээ', rel: 'gml', emoji: 'image/emee.png', photo: null, bio: 'Амттай боов хийдэг.' },
-        { id: 3, name: 'Болд аав', rel: 'dad', emoji: 'image/aaw.png', photo: null, bio: 'Машин сайн барина.' },
-        { id: 4, name: 'Номин ээж', rel: 'mom', emoji: 'image/eej.png', photo: null, bio: 'Дуулж бүжиглэдэг.' },
+        { id: 1, name: 'Баяраа', rel: 'gpl', emoji: 'image/huurhun_owoo.png', photo: null, bio: 'Загас барих дуртай.' },
+        { id: 2, name: 'Сувдаа', rel: 'gml', emoji: 'image/emee.png', photo: null, bio: 'Амттай боов хийдэг.' },
+        { id: 3, name: 'Болдоо', rel: 'dad', emoji: 'image/aaw.png', photo: null, bio: 'Машин сайн барина.' },
+        { id: 4, name: 'Номин ', rel: 'mom', emoji: 'image/eej.png', photo: null, bio: 'Дуулж бүжиглэдэг.' },
         { id: 5, name: 'Би', rel: 'me', emoji: 'image/unaach.png', photo: null, bio: 'Ургийн модоо бүтээж байна.' },
-        { id: 6, name: 'Эрдэнэ дүү', rel: 'sib', emoji: 'image/eregtei_duu.png', photo: null, bio: 'Хурдан гүйдэг.' },
+        { id: 6, name: 'Эрдэнэ', rel: 'sib', emoji: 'image/eregtei_duu.png', photo: null, bio: 'Хурдан гүйдэг.' },
     ];
 
     let members = [];
@@ -677,7 +676,7 @@
 
         return {
             type: 'Хамаарал',
-            prompt: `${member.name} танд хэн бэ?`,
+            prompt: `${member.name} таны хэн бэ?`,
             mediaHtml: `<div class="rounded-[1.5rem] bg-gradient-to-br from-orange-400 to-pink-500 p-5">${buildFaceCard(member)}</div>`,
             options: shuffle([
                 { value: member.rel, label: relationLabel(member.rel), correct: true },
@@ -718,7 +717,7 @@
 
         return {
             type: 'Зураг таних',
-            prompt: `"${member.name}" аль зураг вэ?`,
+            prompt: `"${member.name}" Энэ хэн бэ?`,
             mediaHtml: `
                 <div class="rounded-[1.5rem] bg-gradient-to-br from-fuchsia-500 to-violet-600 p-5 text-center">
                     <div class="text-xs font-black uppercase tracking-[0.22em] text-white/80">Picture Round</div>
