@@ -5,14 +5,16 @@
     const IS_AUTH = !!boot.isAuth;
     const HAS_ERRORS = !!boot.hasErrors;
 
-    const TREE_BASE_W = 1600;
-    const TREE_BASE_H = 1120;
+    let TREE_BASE_W = 1600;
+    let TREE_BASE_H = 1120;
 
     let treeZoom = 1;
     let members = [];
     let selEmoji = 'image/jaal_huu.png';
     let photoData = null;
     let selectedMemberId = null;
+    let editingMemberId = null;
+    let hasAutoCentered = false;
 
     function esc(text) {
         return String(text ?? '')
@@ -23,8 +25,121 @@
             .replace(/'/g, '&#039;');
     }
 
+    function splitTextTwoLines(text, targetChars) {
+        const value = String(text ?? '').trim();
+        if (!value) {
+            return ['', ''];
+        }
+
+        if (value.length <= targetChars) {
+            return [value, ''];
+        }
+
+        const words = value.split(/\s+/);
+        if (words.length === 1) {
+            return [value.slice(0, targetChars), value.slice(targetChars)];
+        }
+
+        let lineOne = '';
+        for (let index = 0; index < words.length; index += 1) {
+            const candidate = lineOne ? (lineOne + ' ' + words[index]) : words[index];
+            if (candidate.length > targetChars) {
+                if (!lineOne) {
+                    lineOne = candidate.slice(0, targetChars);
+                    const rest = candidate.slice(targetChars) + (index + 1 < words.length ? (' ' + words.slice(index + 1).join(' ')) : '');
+                    return [lineOne.trim(), rest.trim()];
+                }
+
+                const restWords = words.slice(index);
+                return [lineOne.trim(), restWords.join(' ').trim()];
+            }
+            lineOne = candidate;
+        }
+
+        return [lineOne.trim(), ''];
+    }
+
     function isImgPath(path) {
         return path && (path.startsWith('image/') || path.startsWith('/') || path.startsWith('data:') || path.startsWith('http'));
+    }
+
+    function toId(value) {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function normalizeMember(member) {
+        return {
+            ...member,
+            id: toId(member.id),
+            related_to_id: toId(member.related_to_id),
+        };
+    }
+
+    function getMemberById(id) {
+        const normalizedId = toId(id);
+        if (!normalizedId) {
+            return null;
+        }
+
+        return members.find((item) => item.id === normalizedId) || null;
+    }
+
+    function getSelectedMember() {
+        return getMemberById(selectedMemberId);
+    }
+
+    function getMeMember() {
+        return members.find((item) => item.rel === 'me') || members[0] || null;
+    }
+
+    function getRelatedToInput() {
+        return document.getElementById('fi-related-to-id');
+    }
+
+    function findPartnerFor(memberId) {
+        const ownerId = toId(memberId);
+        if (!ownerId) {
+            return null;
+        }
+
+        return members.find((item) => item.rel === 'partner' && toId(item.related_to_id) === ownerId) || null;
+    }
+
+    function getChildrenOf(memberId) {
+        const ownerId = toId(memberId);
+        if (!ownerId) {
+            return [];
+        }
+
+        return members.filter((item) => item.rel === 'child' && toId(item.related_to_id) === ownerId);
+    }
+
+    function getBaseDescendantOwner(member) {
+        if (!member) {
+            return null;
+        }
+
+        if ((member.rel === 'partner' || member.rel === 'child') && member.related_to_id) {
+            return getMemberById(member.related_to_id) || member;
+        }
+
+        return member;
+    }
+
+    function estimateNodeLabelWidth(member) {
+        const nameLength = (member?.name || '').length;
+        return Math.max(112, 72 + (nameLength * 8));
+    }
+
+    function estimateUnitWidth(unit) {
+        const primaryWidth = estimateNodeLabelWidth(unit.primary);
+        const partnerWidth = unit.partner ? estimateNodeLabelWidth(unit.partner) : 0;
+        if (unit.partner) {
+            return primaryWidth + partnerWidth + 92;
+        }
+
+        return primaryWidth;
     }
 
     function getAssetUrl(path) {
@@ -39,14 +154,15 @@
 
     function loadMembers() {
         if (IS_AUTH) {
-            members = JSON.parse(JSON.stringify(INITIAL_MEMBERS));
+            members = JSON.parse(JSON.stringify(INITIAL_MEMBERS)).map(normalizeMember);
             return;
         }
 
         try {
-            members = JSON.parse(localStorage.getItem('fm_members') || 'null') || JSON.parse(JSON.stringify(INITIAL_MEMBERS));
+            const local = JSON.parse(localStorage.getItem('fm_members') || 'null');
+            members = (local || JSON.parse(JSON.stringify(INITIAL_MEMBERS))).map(normalizeMember);
         } catch (error) {
-            members = JSON.parse(JSON.stringify(INITIAL_MEMBERS));
+            members = JSON.parse(JSON.stringify(INITIAL_MEMBERS)).map(normalizeMember);
         }
     }
 
@@ -63,12 +179,12 @@
     }
 
     function setSelectedMember(id) {
-        const member = members.find((item) => item.id === id);
+        const member = getMemberById(id);
         if (!member) {
             return;
         }
 
-        selectedMemberId = id;
+        selectedMemberId = member.id;
         const rel = RELS[member.rel] || { label: member.rel };
 
         const nameEl = document.getElementById('sel-name');
@@ -96,29 +212,15 @@
         renderTree();
     }
 
-    function buildLayout() {
-        const centerX = 800;
-        const parentHalfGap = 300;
-        const grandHalfGap = 150;
-        const greatHalfGap = 58;
-        const radius = 55;
-
+    function buildAncestorSection(nodes, links, centerX, radius) {
         const rows = {
             great: 70,
             grand: 290,
-            parent: 540,
-            sibling: 820,
-            child: 1040,
+            parent: 520,
         };
-
-        const nodes = [];
-        const links = [];
 
         const dad = members.find((item) => item.rel === 'dad') || null;
         const mom = members.find((item) => item.rel === 'mom') || null;
-        const partner = members.find((item) => item.rel === 'partner') || null;
-        const me = members.find((item) => item.rel === 'me') || members[0] || null;
-        const siblings = members.filter((item) => item.rel === 'sib' && (!me || item.id !== me.id));
 
         const gpaPaternal = members.find((item) => item.rel === 'gpl') || null;
         const gmaPaternal = members.find((item) => item.rel === 'gml') || null;
@@ -148,8 +250,31 @@
             },
         ];
 
-        const children = members.filter((item) => item.rel === 'child');
-        const others = members.filter((item) => !['me', 'dad', 'mom', 'partner', 'gpl', 'gml', 'gpr', 'gmr', 'ggplf', 'ggplm', 'ggmlf', 'ggmlm', 'ggprf', 'ggprm', 'ggmrf', 'ggmrm', 'sib', 'child'].includes(item.rel));
+        const parentWidth = Math.max(
+            estimateNodeLabelWidth(dad || {}),
+            estimateNodeLabelWidth(mom || {})
+        );
+        const grandWidth = Math.max(
+            estimateNodeLabelWidth(gpaPaternal || {}),
+            estimateNodeLabelWidth(gmaPaternal || {}),
+            estimateNodeLabelWidth(gpaMaternal || {}),
+            estimateNodeLabelWidth(gmaMaternal || {})
+        );
+        const greatWidth = Math.max(
+            ...greatPairs.flatMap((pair) => [estimateNodeLabelWidth(pair.father || {}), estimateNodeLabelWidth(pair.mother || {})])
+        );
+
+        const greatHalfGap = Math.max(86, Math.round((greatWidth / 2) + 18));
+        const grandHalfGap = Math.max(
+            160,
+            Math.round((grandWidth / 2) + 30),
+            greatHalfGap + 110
+        );
+        const parentHalfGap = Math.max(
+            340,
+            Math.round((parentWidth / 2) + 36),
+            grandHalfGap + greatHalfGap + 140
+        );
 
         const dadX = centerX - parentHalfGap;
         const momX = centerX + parentHalfGap;
@@ -321,20 +446,33 @@
 
         const yStart = ancestorMeta.descendantStartY;
         const levelGap = 240;
-        const unitGap = 300;
-        const pairGap = 190;
 
         const levelMaps = [];
 
         levels.forEach((units, levelIndex) => {
             const y = yStart + (levelIndex * levelGap);
             const levelMap = new Map();
+            const widestUnit = units.reduce((maxWidth, unit) => Math.max(maxWidth, estimateUnitWidth(unit)), 180);
+            const unitGap = Math.max(300, widestUnit + 56);
+            const basePairGap = Math.max(190, Math.round(widestUnit * 0.58));
             const startX = centerX - ((Math.max(units.length, 1) - 1) * unitGap) / 2;
+            const anchors = [];
+
+            if (levelIndex === 0 && units.length > 0) {
+                // Keep the main unit (me + partner) fixed in center. Spread siblings around it.
+                anchors[0] = centerX;
+                for (let idx = 1; idx < units.length; idx += 1) {
+                    const step = Math.ceil(idx / 2) * unitGap;
+                    const sign = idx % 2 === 1 ? 1 : -1;
+                    anchors[idx] = centerX + (sign * step);
+                }
+            }
 
             units.forEach((unit, index) => {
-                const anchorX = startX + (index * unitGap);
+                const anchorX = anchors[index] ?? (startX + (index * unitGap));
                 let primaryX = anchorX;
                 let partnerX = null;
+                const pairGap = Math.max(basePairGap, Math.round((estimateNodeLabelWidth(unit.primary) + estimateNodeLabelWidth(unit.partner || {})) * 0.44));
 
                 if (unit.partner) {
                     primaryX = anchorX - (pairGap / 2);
@@ -442,15 +580,18 @@
         const minY = ys.length ? Math.min(...ys) - 180 : 0;
         const maxY = ys.length ? Math.max(...ys) + 180 : TREE_BASE_H;
 
-        TREE_BASE_W = Math.max(1600, maxX - minX);
-        TREE_BASE_H = Math.max(1120, maxY - minY);
+        const boundsWidth = Math.max(1, maxX - minX);
+        const boundsHeight = Math.max(1, maxY - minY);
+        const padding = 140;
+        const offsetX = padding - minX;
+        const offsetY = padding - minY;
 
-        const offsetX = minX < 0 ? Math.abs(minX) + 20 : 0;
-        const offsetY = minY < 0 ? Math.abs(minY) + 20 : 0;
+        TREE_BASE_W = Math.max(1200, Math.round(boundsWidth + (padding * 2)));
+        TREE_BASE_H = Math.max(980, Math.round(boundsHeight + (padding * 2)));
 
         let linksMarkup = '';
         links.forEach((line) => {
-            linksMarkup += '<line x1="' + (line.x1 + offsetX) + '" y1="' + (line.y1 + offsetY) + '" x2="' + (line.x2 + offsetX) + '" y2="' + (line.y2 + offsetY) + '" stroke="#2f3b3c" stroke-width="2.2" stroke-linecap="round" />';
+            linksMarkup += '<line x1="' + (line.x1 + offsetX) + '" y1="' + (line.y1 + offsetY) + '" x2="' + (line.x2 + offsetX) + '" y2="' + (line.y2 + offsetY) + '" stroke="#2b3a3c" stroke-width="3" stroke-linecap="round" />';
         });
 
         let nodesMarkup = '';
@@ -460,20 +601,33 @@
             const ringWidth = selected ? 8 : 5;
             const avatarUrl = node.photo ? node.photo : (isImgPath(node.emoji) ? getAssetUrl(node.emoji) : null);
             const clipId = 'clip-avatar-' + node.id;
+            const rowIsCrowded = node.y < 340;
+            const nameFontSize = rowIsCrowded ? 13 : 18;
+            const relFontSize = rowIsCrowded ? 10 : 13;
+            const maxNameChars = rowIsCrowded ? 14 : (node.y < 620 ? 18 : 24);
+            const maxRelChars = rowIsCrowded ? 13 : (node.y < 620 ? 16 : 20);
+            const [nameLineOne, nameLineTwo] = splitTextTwoLines(node.name, maxNameChars);
+            const [relLineOne, relLineTwo] = splitTextTwoLines(rel.label || node.rel, maxRelChars);
 
             nodesMarkup += '<g class="cursor-pointer" onclick="setSelectedMember(' + node.id + ')">';
-            nodesMarkup += '<circle cx="' + node.x + '" cy="' + node.y + '" r="55" fill="#ffffff" stroke="' + rel.stroke + '" stroke-width="' + ringWidth + '" />';
+            nodesMarkup += '<circle cx="' + (node.x + offsetX) + '" cy="' + (node.y + offsetY) + '" r="55" fill="#ffffff" stroke="' + rel.stroke + '" stroke-width="' + ringWidth + '" />';
 
             if (avatarUrl) {
-                nodesMarkup += '<defs><clipPath id="' + clipId + '"><circle cx="' + node.x + '" cy="' + node.y + '" r="48" /></clipPath></defs>';
-                nodesMarkup += '<image href="' + avatarUrl + '" x="' + (node.x - 48) + '" y="' + (node.y - 48) + '" width="96" height="96" preserveAspectRatio="xMidYMid slice" clip-path="url(#' + clipId + ')" />';
+                nodesMarkup += '<defs><clipPath id="' + clipId + '"><circle cx="' + (node.x + offsetX) + '" cy="' + (node.y + offsetY) + '" r="48" /></clipPath></defs>';
+                nodesMarkup += '<image href="' + avatarUrl + '" x="' + ((node.x + offsetX) - 48) + '" y="' + ((node.y + offsetY) - 48) + '" width="96" height="96" preserveAspectRatio="xMidYMid slice" clip-path="url(#' + clipId + ')" />';
             } else {
-                nodesMarkup += '<circle cx="' + node.x + '" cy="' + node.y + '" r="48" fill="' + rel.color + '" />';
-                nodesMarkup += '<text x="' + node.x + '" y="' + (node.y + 10) + '" text-anchor="middle" font-size="28" fill="#334155" font-family="Nunito, sans-serif">' + esc(node.emoji || 'Х') + '</text>';
+                nodesMarkup += '<circle cx="' + (node.x + offsetX) + '" cy="' + (node.y + offsetY) + '" r="48" fill="' + rel.color + '" />';
+                nodesMarkup += '<text x="' + (node.x + offsetX) + '" y="' + ((node.y + offsetY) + 10) + '" text-anchor="middle" font-size="28" fill="#334155" font-family="Nunito, sans-serif">' + esc(node.emoji || '?') + '</text>';
             }
 
-            nodesMarkup += '<text x="' + node.x + '" y="' + (node.y + 86) + '" text-anchor="middle" font-size="18" font-weight="700" fill="#1e3a5f" font-family="Nunito, sans-serif">' + esc(node.name) + '</text>';
-            nodesMarkup += '<text x="' + node.x + '" y="' + (node.y + 110) + '" text-anchor="middle" font-size="13" font-weight="700" fill="' + rel.stroke + '" font-family="Nunito, sans-serif">' + esc(rel.label || node.rel) + '</text>';
+            nodesMarkup += '<text x="' + (node.x + offsetX) + '" y="' + ((node.y + offsetY) + 86) + '" text-anchor="middle" font-size="' + nameFontSize + '" font-weight="700" fill="#1e3a5f" font-family="Nunito, sans-serif">'
+                + '<tspan x="' + (node.x + offsetX) + '" dy="0">' + esc(nameLineOne) + '</tspan>'
+                + (nameLineTwo ? ('<tspan x="' + (node.x + offsetX) + '" dy="' + Math.round(nameFontSize * 1.12) + '">' + esc(nameLineTwo) + '</tspan>') : '')
+                + '</text>';
+            nodesMarkup += '<text x="' + (node.x + offsetX) + '" y="' + ((node.y + offsetY) + 112 + (nameLineTwo ? Math.round(nameFontSize * 0.8) : 0)) + '" text-anchor="middle" font-size="' + relFontSize + '" font-weight="700" fill="' + rel.stroke + '" font-family="Nunito, sans-serif">'
+                + '<tspan x="' + (node.x + offsetX) + '" dy="0">' + esc(relLineOne) + '</tspan>'
+                + (relLineTwo ? ('<tspan x="' + (node.x + offsetX) + '" dy="' + Math.round(relFontSize * 1.12) + '">' + esc(relLineTwo) + '</tspan>') : '')
+                + '</text>';
             nodesMarkup += '</g>';
         });
 
@@ -483,6 +637,23 @@
         svg.innerHTML = '<rect x="0" y="0" width="' + TREE_BASE_W + '" height="' + TREE_BASE_H + '" fill="#f8fbff"/>' + linksMarkup + nodesMarkup;
 
         updateZoomLabel();
+        autoCenterTree();
+    }
+
+    function autoCenterTree(force) {
+        const scroll = document.getElementById('tree-scroll');
+        if (!scroll) {
+            return;
+        }
+
+        if (!force && hasAutoCentered) {
+            return;
+        }
+
+        const targetLeft = Math.max(0, (scroll.scrollWidth - scroll.clientWidth) / 2);
+        const targetTop = Math.max(0, (scroll.scrollHeight - scroll.clientHeight) / 2);
+        scroll.scrollTo({ left: targetLeft, top: targetTop, behavior: 'auto' });
+        hasAutoCentered = true;
     }
 
     function updateZoomLabel() {
@@ -499,37 +670,98 @@
 
     function zoomIn() { setZoom(treeZoom + 0.1); }
     function zoomOut() { setZoom(treeZoom - 0.1); }
-    function zoomReset() { setZoom(1); }
+    function zoomReset() {
+        hasAutoCentered = false;
+        setZoom(1);
+    }
 
-    function printTree() {
+    function toAbsoluteUrl(url) {
+        if (!url) {
+            return '';
+        }
+
+        if (/^(data:|blob:|https?:)/i.test(url)) {
+            return url;
+        }
+
+        try {
+            return new URL(url, window.location.origin).href;
+        } catch (error) {
+            return url;
+        }
+    }
+
+    function blobToDataUrl(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ''));
+            reader.onerror = () => reject(new Error('read_failed'));
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    async function buildExportSvgMarkup(svg) {
+        const exportSvg = svg.cloneNode(true);
+        const imageNodes = Array.from(exportSvg.querySelectorAll('image'));
+
+        for (const imageNode of imageNodes) {
+            const rawHref = imageNode.getAttribute('href') || imageNode.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
+            if (!rawHref || rawHref.startsWith('data:')) {
+                continue;
+            }
+
+            const absoluteHref = toAbsoluteUrl(rawHref);
+
+            try {
+                const response = await fetch(absoluteHref, { cache: 'force-cache' });
+                if (!response.ok) {
+                    throw new Error('image_fetch_failed');
+                }
+
+                const blob = await response.blob();
+                const dataUrl = await blobToDataUrl(blob);
+                imageNode.setAttribute('href', dataUrl);
+                imageNode.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUrl);
+            } catch (error) {
+                imageNode.setAttribute('href', absoluteHref);
+                imageNode.setAttributeNS('http://www.w3.org/1999/xlink', 'href', absoluteHref);
+            }
+        }
+
+        const serializer = new XMLSerializer();
+        return serializer.serializeToString(exportSvg);
+    }
+
+    async function printTree() {
         const svg = document.getElementById('tree-svg');
         if (!svg) {
             return;
         }
 
+        const svgMarkup = await buildExportSvgMarkup(svg);
         const popup = window.open('', '_blank', 'width=1200,height=900');
         if (!popup) {
             return;
         }
 
-        popup.document.write('<html><head><title>Ургийн мод хэвлэх</title></head><body style="margin:0;display:flex;justify-content:center;align-items:center;background:#fff;">' + svg.outerHTML + '</body></html>');
+        popup.document.write('<html><head><title>Ургийн мод хэвлэх</title></head><body style="margin:0;display:flex;justify-content:center;align-items:center;background:#fff;">' + svgMarkup + '</body></html>');
         popup.document.close();
         popup.focus();
         popup.print();
     }
 
-    function downloadTreePng() {
+    async function downloadTreePng() {
         const svg = document.getElementById('tree-svg');
         if (!svg) {
             return;
         }
 
-        const serializer = new XMLSerializer();
-        const source = serializer.serializeToString(svg);
+        const source = await buildExportSvgMarkup(svg);
         const svgBlob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
         const url = URL.createObjectURL(svgBlob);
 
         const image = new Image();
+        image.crossOrigin = 'anonymous';
         image.onload = () => {
             const canvas = document.createElement('canvas');
             canvas.width = TREE_BASE_W;
@@ -549,7 +781,55 @@
         image.src = url;
     }
 
+    function setFormModeCreate() {
+        editingMemberId = null;
+        const form = document.getElementById('add-form');
+        if (!form) {
+            return;
+        }
+
+        form.action = '/family-tree';
+        const override = form.querySelector('input[name="_method"]');
+        if (override) {
+            override.remove();
+        }
+
+        const submitButton = form.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.textContent = 'Хадгалах';
+        }
+    }
+
+    function setFormModeEdit(memberId) {
+        editingMemberId = memberId;
+        const form = document.getElementById('add-form');
+        if (!form) {
+            return;
+        }
+
+        form.action = '/family-tree/' + memberId;
+        let override = form.querySelector('input[name="_method"]');
+        if (!override) {
+            override = document.createElement('input');
+            override.type = 'hidden';
+            override.name = '_method';
+            form.appendChild(override);
+        }
+        override.value = 'PATCH';
+
+        const submitButton = form.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.textContent = 'Засвар хадгалах';
+        }
+    }
+
     function openAddModal() {
+        setFormModeCreate();
+        const relatedInput = getRelatedToInput();
+        if (relatedInput) {
+            relatedInput.value = '';
+        }
+
         const modal = document.getElementById('add-modal');
         if (!modal) {
             return;
@@ -573,27 +853,61 @@
     }
 
     function openEditModal() {
-        const member = members.find((item) => item.id === selectedMemberId);
+        const member = getSelectedMember();
         if (!member) {
             openAddModal();
             return;
         }
 
+        setFormModeEdit(member.id);
         document.querySelector('[name="name"]').value = member.name || '';
         document.querySelector('[name="rel"]').value = member.rel || '';
         document.querySelector('[name="bio"]').value = member.bio || '';
-        openAddModal();
+
+        const relatedInput = getRelatedToInput();
+        if (relatedInput) {
+            relatedInput.value = member.related_to_id || '';
+        }
+
+        const modal = document.getElementById('add-modal');
+        if (!modal) {
+            return;
+        }
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
     }
 
     function openAddByRelation(rel) {
+        setFormModeCreate();
         document.querySelector('[name="rel"]').value = rel;
-        openAddModal();
+
+        const selected = getSelectedMember() || getMeMember();
+        const relatedInput = getRelatedToInput();
+        if (relatedInput) {
+            if (rel === 'partner' || rel === 'child') {
+                const owner = getBaseDescendantOwner(selected);
+                relatedInput.value = owner ? owner.id : '';
+            } else {
+                relatedInput.value = '';
+            }
+        }
+
+        const modal = document.getElementById('add-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
         document.querySelector('[name="name"]').focus();
     }
 
     function addChildWithPartnerCheck() {
-        const hasPartner = members.some((item) => item.rel === 'partner');
-        if (!hasPartner) {
+        const selected = getSelectedMember() || getMeMember();
+        const owner = getBaseDescendantOwner(selected);
+        if (!owner) {
+            return;
+        }
+
+        if (!findPartnerFor(owner.id)) {
             alert('Эхлээд хань нэмнэ үү.');
             openAddByRelation('partner');
             return;
@@ -607,51 +921,53 @@
             return [];
         }
 
+        const relatedToId = member.id;
+
         if (member.rel === 'dad') {
             return [
-                { rel: 'gpl', name: 'Аавын аав', emoji: 'image/hogshin_aaw.png', bio: 'Өвөө' },
-                { rel: 'gml', name: 'Аавын ээж', emoji: 'image/emee.png', bio: 'Эмээ' },
+                { rel: 'gpl', name: 'Аавын аав', emoji: 'image/hogshin_aaw.png', bio: 'Өвөө', related_to_id: relatedToId },
+                { rel: 'gml', name: 'Аавын ээж', emoji: 'image/emee.png', bio: 'Эмээ', related_to_id: relatedToId },
             ];
         }
 
         if (member.rel === 'mom') {
             return [
-                { rel: 'gpr', name: 'Ээжийн аав', emoji: 'image/hogshin_aaw.png', bio: 'Өвөө' },
-                { rel: 'gmr', name: 'Ээжийн ээж', emoji: 'image/emee.png', bio: 'Эмээ' },
+                { rel: 'gpr', name: 'Ээжийн аав', emoji: 'image/hogshin_aaw.png', bio: 'Өвөө', related_to_id: relatedToId },
+                { rel: 'gmr', name: 'Ээжийн ээж', emoji: 'image/emee.png', bio: 'Эмээ', related_to_id: relatedToId },
             ];
         }
 
         if (member.rel === 'gpl') {
             return [
-                { rel: 'ggplf', name: 'Аавын аавын аав', emoji: 'image/hogshin_aaw.png', bio: 'Өвөөгийн аав' },
-                { rel: 'ggplm', name: 'Аавын аавын ээж', emoji: 'image/emee.png', bio: 'Өвөөгийн ээж' },
+                { rel: 'ggplf', name: 'Аавын аавын аав', emoji: 'image/hogshin_aaw.png', bio: 'Өвөөгийн аав', related_to_id: relatedToId },
+                { rel: 'ggplm', name: 'Аавын аавын ээж', emoji: 'image/emee.png', bio: 'Өвөөгийн ээж', related_to_id: relatedToId },
             ];
         }
 
         if (member.rel === 'gml') {
             return [
-                { rel: 'ggmlf', name: 'Аавын ээжийн аав', emoji: 'image/hogshin_aaw.png', bio: 'Эмээгийн аав' },
-                { rel: 'ggmlm', name: 'Аавын ээжийн ээж', emoji: 'image/emee.png', bio: 'Эмээгийн ээж' },
+                { rel: 'ggmlf', name: 'Аавын ээжийн аав', emoji: 'image/hogshin_aaw.png', bio: 'Эмээгийн аав', related_to_id: relatedToId },
+                { rel: 'ggmlm', name: 'Аавын ээжийн ээж', emoji: 'image/emee.png', bio: 'Эмээгийн ээж', related_to_id: relatedToId },
             ];
         }
 
         if (member.rel === 'gpr') {
             return [
-                { rel: 'ggprf', name: 'Ээжийн аавын аав', emoji: 'image/hogshin_aaw.png', bio: 'Өвөөгийн аав' },
-                { rel: 'ggprm', name: 'Ээжийн аавын ээж', emoji: 'image/emee.png', bio: 'Өвөөгийн ээж' },
+                { rel: 'ggprf', name: 'Ээжийн аавын аав', emoji: 'image/hogshin_aaw.png', bio: 'Өвөөгийн аав', related_to_id: relatedToId },
+                { rel: 'ggprm', name: 'Ээжийн аавын ээж', emoji: 'image/emee.png', bio: 'Өвөөгийн ээж', related_to_id: relatedToId },
             ];
         }
 
         if (member.rel === 'gmr') {
             return [
-                { rel: 'ggmrf', name: 'Ээжийн ээжийн аав', emoji: 'image/hogshin_aaw.png', bio: 'Эмээгийн аав' },
-                { rel: 'ggmrm', name: 'Ээжийн ээжийн ээж', emoji: 'image/emee.png', bio: 'Эмээгийн ээж' },
+                { rel: 'ggmrf', name: 'Ээжийн ээжийн аав', emoji: 'image/hogshin_aaw.png', bio: 'Эмээгийн аав', related_to_id: relatedToId },
+                { rel: 'ggmrm', name: 'Ээжийн ээжийн ээж', emoji: 'image/emee.png', bio: 'Эмээгийн ээж', related_to_id: relatedToId },
             ];
         }
 
         return [
-            { rel: 'dad', name: 'Миний аав', emoji: 'image/er_hun.png', bio: 'Аав' },
-            { rel: 'mom', name: 'Миний ээж', emoji: 'image/eej.png', bio: 'Ээж' },
+            { rel: 'dad', name: 'Миний аав', emoji: 'image/er_hun.png', bio: 'Аав', related_to_id: relatedToId },
+            { rel: 'mom', name: 'Миний ээж', emoji: 'image/eej.png', bio: 'Ээж', related_to_id: relatedToId },
         ];
     }
 
@@ -665,6 +981,7 @@
             id: nextId,
             name: payload.name,
             rel: payload.rel,
+            related_to_id: toId(payload.related_to_id),
             emoji: payload.emoji,
             bio: payload.bio,
             photo: null,
@@ -675,7 +992,6 @@
     }
 
     async function createServerMember(payload) {
-        const formAction = document.getElementById('add-form')?.action || '/family-tree';
         const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
         const body = new FormData();
@@ -685,7 +1001,11 @@
         body.append('emoji', payload.emoji);
         body.append('bio', payload.bio);
 
-        const response = await fetch(formAction, {
+        if (toId(payload.related_to_id)) {
+            body.append('related_to_id', String(toId(payload.related_to_id)));
+        }
+
+        const response = await fetch('/family-tree', {
             method: 'POST',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
@@ -699,7 +1019,7 @@
     }
 
     async function addParentsAuto() {
-        const selected = members.find((item) => item.id === selectedMemberId) || members.find((item) => item.rel === 'me') || members[0];
+        const selected = getSelectedMember() || getMeMember();
         if (!selected) {
             return;
         }
@@ -734,8 +1054,10 @@
         }
 
         if (created.length > 0) {
+            hasAutoCentered = false;
             setSelectedMember(created[0].id);
         } else {
+            hasAutoCentered = false;
             renderTree();
         }
     }
@@ -758,6 +1080,7 @@
 
         if (members.length > 0) {
             const fallback = members.find((item) => item.rel === 'me') || members[0];
+            hasAutoCentered = false;
             setSelectedMember(fallback.id);
         } else {
             selectedMemberId = null;
@@ -767,6 +1090,7 @@
             document.getElementById('sel-rel-meta').textContent = '-';
             document.getElementById('sel-bio-meta').textContent = '-';
             document.getElementById('sel-av-area').innerHTML = '';
+            hasAutoCentered = false;
             renderTree();
         }
     }
@@ -814,27 +1138,79 @@
         const nameInput = document.querySelector('[name="name"]');
         const relInput = document.querySelector('[name="rel"]');
         const bioInput = document.querySelector('[name="bio"]');
+        const relatedInput = getRelatedToInput();
         const submitButton = document.querySelector('#add-form button[type="submit"]');
 
-        const name = nameInput.value.trim();
-        const rel = relInput.value;
-        const bio = bioInput.value.trim();
+        const selected = getSelectedMember() || getMeMember();
+        const owner = getBaseDescendantOwner(selected);
 
+        const name = (nameInput?.value || '').trim();
+        const rel = relInput?.value || '';
+        const bio = (bioInput?.value || '').trim();
+        let relatedToId = toId(relatedInput ? relatedInput.value : null);
+
+        if ((rel === 'partner' || rel === 'child') && !relatedToId) {
+            relatedToId = owner ? owner.id : null;
+            if (relatedInput) {
+                relatedInput.value = relatedToId || '';
+            }
+        }
+
+        let errorMessage = '';
         if (!name || !rel) {
-            submitButton.textContent = 'Нэр ба харилцаагаа оруулна уу';
-            submitButton.classList.remove('bg-green-600', 'hover:bg-green-700');
-            submitButton.classList.add('bg-red-600');
+            errorMessage = 'Нэр ба харилцаагаа оруулна уу';
+        } else if (rel === 'me' && members.some((item) => item.rel === 'me' && item.id !== editingMemberId)) {
+            errorMessage = 'Зөвхөн нэг "Би" байна';
+        } else if (rel === 'partner' && !relatedToId) {
+            errorMessage = 'Хань нэмэх хүнээ сонгоно уу';
+        } else if (rel === 'partner' && members.some((item) => item.rel === 'partner' && toId(item.related_to_id) === relatedToId && item.id !== editingMemberId)) {
+            errorMessage = 'Энэ хүнд хань аль хэдийн байна';
+        } else if (rel === 'child' && !relatedToId) {
+            errorMessage = 'Хүүхдийг аль хүнд холбохоо сонгоно уу';
+        }
 
-            setTimeout(() => {
-                submitButton.textContent = 'Хадгалах';
-                submitButton.classList.remove('bg-red-600');
-                submitButton.classList.add('bg-green-600', 'hover:bg-green-700');
-            }, 1800);
+        if (errorMessage) {
+            if (submitButton) {
+                submitButton.textContent = errorMessage;
+                submitButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+                submitButton.classList.add('bg-red-600');
+
+                setTimeout(() => {
+                    submitButton.textContent = editingMemberId ? 'Засвар хадгалах' : 'Хадгалах';
+                    submitButton.classList.remove('bg-red-600');
+                    submitButton.classList.add('bg-green-600', 'hover:bg-green-700');
+                }, 1800);
+            }
+            return false;
+        }
+
+        if (editingMemberId) {
+            const editing = getMemberById(editingMemberId);
+            if (!editing) {
+                return false;
+            }
+
+            editing.name = name;
+            editing.rel = rel;
+            editing.related_to_id = relatedToId;
+            editing.bio = bio || 'Гэр бүлийн гишүүн';
+            editing.emoji = selEmoji;
+            editing.photo = photoData || editing.photo || null;
+
+            try {
+                localStorage.setItem('fm_members', JSON.stringify(members));
+            } catch (error) {
+                // ignore localStorage errors
+            }
+
+            setSelectedMember(editing.id);
+            closeAddModal();
+            setFormModeCreate();
             return false;
         }
 
         const nextId = Math.max(...members.map((item) => item.id), 0) + 1;
-        members.push({ id: nextId, name, rel, emoji: selEmoji, bio: bio || 'Гэр бүлийн гишүүн', photo: photoData });
+        members.push({ id: nextId, name, rel, related_to_id: relatedToId, emoji: selEmoji, bio: bio || 'Гэр бүлийн гишүүн', photo: photoData });
 
         try {
             localStorage.setItem('fm_members', JSON.stringify(members));
@@ -842,9 +1218,19 @@
             // ignore localStorage errors
         }
 
-        nameInput.value = '';
-        relInput.value = '';
-        bioInput.value = '';
+        if (nameInput) {
+            nameInput.value = '';
+        }
+        if (relInput) {
+            relInput.value = '';
+        }
+        if (bioInput) {
+            bioInput.value = '';
+        }
+        if (relatedInput) {
+            relatedInput.value = '';
+        }
+
         photoData = null;
         selEmoji = 'image/jaal_huu.png';
         document.getElementById('fi-emoji').value = selEmoji;
@@ -857,16 +1243,19 @@
 
         document.getElementById('upload-inner').innerHTML = '<div class="text-lg font-bold text-slate-600">Зураг сонгох</div><div class="mt-1 text-xs text-gray-400">Дарж оруулна уу</div>';
 
-        submitButton.textContent = 'Хадгалагдлаа';
-        submitButton.classList.remove('bg-green-600', 'hover:bg-green-700');
-        submitButton.classList.add('bg-orange-500');
+        if (submitButton) {
+            submitButton.textContent = 'Хадгалагдлаа';
+            submitButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+            submitButton.classList.add('bg-orange-500');
 
-        setTimeout(() => {
-            submitButton.textContent = 'Хадгалах';
-            submitButton.classList.remove('bg-orange-500');
-            submitButton.classList.add('bg-green-600', 'hover:bg-green-700');
-        }, 1400);
+            setTimeout(() => {
+                submitButton.textContent = 'Хадгалах';
+                submitButton.classList.remove('bg-orange-500');
+                submitButton.classList.add('bg-green-600', 'hover:bg-green-700');
+            }, 1400);
+        }
 
+        hasAutoCentered = false;
         setSelectedMember(nextId);
         closeAddModal();
         return false;
@@ -901,3 +1290,4 @@
         openAddModal();
     }
 })();
+
