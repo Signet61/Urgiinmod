@@ -25,13 +25,38 @@
             .replace(/'/g, '&#039;');
     }
 
-    function truncateText(text, maxChars) {
-        const value = String(text ?? '');
-        if (value.length <= maxChars) {
-            return value;
+    function splitTextTwoLines(text, targetChars) {
+        const value = String(text ?? '').trim();
+        if (!value) {
+            return ['', ''];
         }
 
-        return value.slice(0, Math.max(1, maxChars - 1)) + '…';
+        if (value.length <= targetChars) {
+            return [value, ''];
+        }
+
+        const words = value.split(/\s+/);
+        if (words.length === 1) {
+            return [value.slice(0, targetChars), value.slice(targetChars)];
+        }
+
+        let lineOne = '';
+        for (let index = 0; index < words.length; index += 1) {
+            const candidate = lineOne ? (lineOne + ' ' + words[index]) : words[index];
+            if (candidate.length > targetChars) {
+                if (!lineOne) {
+                    lineOne = candidate.slice(0, targetChars);
+                    const rest = candidate.slice(targetChars) + (index + 1 < words.length ? (' ' + words.slice(index + 1).join(' ')) : '');
+                    return [lineOne.trim(), rest.trim()];
+                }
+
+                const restWords = words.slice(index);
+                return [lineOne.trim(), restWords.join(' ').trim()];
+            }
+            lineOne = candidate;
+        }
+
+        return [lineOne.trim(), ''];
     }
 
     function isImgPath(path) {
@@ -581,8 +606,8 @@
             const relFontSize = rowIsCrowded ? 10 : 13;
             const maxNameChars = rowIsCrowded ? 14 : (node.y < 620 ? 18 : 24);
             const maxRelChars = rowIsCrowded ? 13 : (node.y < 620 ? 16 : 20);
-            const displayName = truncateText(node.name, maxNameChars);
-            const displayRel = truncateText(rel.label || node.rel, maxRelChars);
+            const [nameLineOne, nameLineTwo] = splitTextTwoLines(node.name, maxNameChars);
+            const [relLineOne, relLineTwo] = splitTextTwoLines(rel.label || node.rel, maxRelChars);
 
             nodesMarkup += '<g class="cursor-pointer" onclick="setSelectedMember(' + node.id + ')">';
             nodesMarkup += '<circle cx="' + (node.x + offsetX) + '" cy="' + (node.y + offsetY) + '" r="55" fill="#ffffff" stroke="' + rel.stroke + '" stroke-width="' + ringWidth + '" />';
@@ -595,8 +620,14 @@
                 nodesMarkup += '<text x="' + (node.x + offsetX) + '" y="' + ((node.y + offsetY) + 10) + '" text-anchor="middle" font-size="28" fill="#334155" font-family="Nunito, sans-serif">' + esc(node.emoji || '?') + '</text>';
             }
 
-            nodesMarkup += '<text x="' + (node.x + offsetX) + '" y="' + ((node.y + offsetY) + 86) + '" text-anchor="middle" font-size="' + nameFontSize + '" font-weight="700" fill="#1e3a5f" font-family="Nunito, sans-serif">' + esc(displayName) + '</text>';
-            nodesMarkup += '<text x="' + (node.x + offsetX) + '" y="' + ((node.y + offsetY) + 110) + '" text-anchor="middle" font-size="' + relFontSize + '" font-weight="700" fill="' + rel.stroke + '" font-family="Nunito, sans-serif">' + esc(displayRel) + '</text>';
+            nodesMarkup += '<text x="' + (node.x + offsetX) + '" y="' + ((node.y + offsetY) + 86) + '" text-anchor="middle" font-size="' + nameFontSize + '" font-weight="700" fill="#1e3a5f" font-family="Nunito, sans-serif">'
+                + '<tspan x="' + (node.x + offsetX) + '" dy="0">' + esc(nameLineOne) + '</tspan>'
+                + (nameLineTwo ? ('<tspan x="' + (node.x + offsetX) + '" dy="' + Math.round(nameFontSize * 1.12) + '">' + esc(nameLineTwo) + '</tspan>') : '')
+                + '</text>';
+            nodesMarkup += '<text x="' + (node.x + offsetX) + '" y="' + ((node.y + offsetY) + 112 + (nameLineTwo ? Math.round(nameFontSize * 0.8) : 0)) + '" text-anchor="middle" font-size="' + relFontSize + '" font-weight="700" fill="' + rel.stroke + '" font-family="Nunito, sans-serif">'
+                + '<tspan x="' + (node.x + offsetX) + '" dy="0">' + esc(relLineOne) + '</tspan>'
+                + (relLineTwo ? ('<tspan x="' + (node.x + offsetX) + '" dy="' + Math.round(relFontSize * 1.12) + '">' + esc(relLineTwo) + '</tspan>') : '')
+                + '</text>';
             nodesMarkup += '</g>';
         });
 
@@ -644,35 +675,93 @@
         setZoom(1);
     }
 
-    function printTree() {
+    function toAbsoluteUrl(url) {
+        if (!url) {
+            return '';
+        }
+
+        if (/^(data:|blob:|https?:)/i.test(url)) {
+            return url;
+        }
+
+        try {
+            return new URL(url, window.location.origin).href;
+        } catch (error) {
+            return url;
+        }
+    }
+
+    function blobToDataUrl(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ''));
+            reader.onerror = () => reject(new Error('read_failed'));
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    async function buildExportSvgMarkup(svg) {
+        const exportSvg = svg.cloneNode(true);
+        const imageNodes = Array.from(exportSvg.querySelectorAll('image'));
+
+        for (const imageNode of imageNodes) {
+            const rawHref = imageNode.getAttribute('href') || imageNode.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
+            if (!rawHref || rawHref.startsWith('data:')) {
+                continue;
+            }
+
+            const absoluteHref = toAbsoluteUrl(rawHref);
+
+            try {
+                const response = await fetch(absoluteHref, { cache: 'force-cache' });
+                if (!response.ok) {
+                    throw new Error('image_fetch_failed');
+                }
+
+                const blob = await response.blob();
+                const dataUrl = await blobToDataUrl(blob);
+                imageNode.setAttribute('href', dataUrl);
+                imageNode.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUrl);
+            } catch (error) {
+                imageNode.setAttribute('href', absoluteHref);
+                imageNode.setAttributeNS('http://www.w3.org/1999/xlink', 'href', absoluteHref);
+            }
+        }
+
+        const serializer = new XMLSerializer();
+        return serializer.serializeToString(exportSvg);
+    }
+
+    async function printTree() {
         const svg = document.getElementById('tree-svg');
         if (!svg) {
             return;
         }
 
+        const svgMarkup = await buildExportSvgMarkup(svg);
         const popup = window.open('', '_blank', 'width=1200,height=900');
         if (!popup) {
             return;
         }
 
-        popup.document.write('<html><head><title>Ургийн мод хэвлэх</title></head><body style="margin:0;display:flex;justify-content:center;align-items:center;background:#fff;">' + svg.outerHTML + '</body></html>');
+        popup.document.write('<html><head><title>Ургийн мод хэвлэх</title></head><body style="margin:0;display:flex;justify-content:center;align-items:center;background:#fff;">' + svgMarkup + '</body></html>');
         popup.document.close();
         popup.focus();
         popup.print();
     }
 
-    function downloadTreePng() {
+    async function downloadTreePng() {
         const svg = document.getElementById('tree-svg');
         if (!svg) {
             return;
         }
 
-        const serializer = new XMLSerializer();
-        const source = serializer.serializeToString(svg);
+        const source = await buildExportSvgMarkup(svg);
         const svgBlob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
         const url = URL.createObjectURL(svgBlob);
 
         const image = new Image();
+        image.crossOrigin = 'anonymous';
         image.onload = () => {
             const canvas = document.createElement('canvas');
             canvas.width = TREE_BASE_W;
